@@ -1,6 +1,6 @@
 module.exports = {
     // Existing configurations
-    ticketsChannelId: '1298189341947858944',
+    ticketsChannelId: '1238583192047325234',
     ticketsCategoryId: '1298187480222404618',
     archivedTicketsCategoryId: '1298232195869184051',
     staffRoleId: '1228653981010497601',
@@ -33,8 +33,8 @@ module.exports = {
     archivedPartnershipTicketsCategoryId: '1298235041230622821',
 
     // Log channel IDs
-    ticketLogsChannelId1: '1298232017653202984', // For General, Appeal, Report tickets
-    ticketLogsChannelId2: '1298235306461364225', // For Staff Report, Partnership tickets
+    ticketLogsChannelId1: '1228653985876021294', // For General, Appeal, Report tickets
+    ticketLogsChannelId2: '1299390184785182770', // For Staff Report, Partnership tickets
 
     
 };

@@ -200,7 +200,6 @@ async function handleInteraction(client, interaction) {
               await handleReopenTicket(interaction);
               break;
             default:
-              console.warn(`Unhandled button customId: ${customId}`);
               break;
           }
         }
@@ -270,7 +269,7 @@ async function handleInteraction(client, interaction) {
     proofUrls.forEach((url, index) => {
       const embed = new EmbedBuilder()
         .setTitle(`Evidence ${index + 1}`)
-        .setColor(0x00ff00)
+        .setColor(0x3ce1ff)
         .setImage(url)
         .setTimestamp();
       embeds.push(embed);
@@ -621,7 +620,7 @@ async function handleInteraction(client, interaction) {
                     .setCustomId('claim_ticket')
                     .setLabel('Claim')
                     .setStyle(ButtonStyle.Success)
-                    .setEmoji('✅'),
+                    .setEmoji('<a:claim:1298228030405214269>'),
                 new ButtonBuilder()
                     .setCustomId(`evidence_${ticketCounter}`)
                     .setLabel('Evidence')
@@ -1116,7 +1115,7 @@ async function handleCloseTicket(interaction) {
                         .setLabel('Partnership Details')
                         .setStyle(ButtonStyle.Primary)
                         .setCustomId(`partnership_details_${ticketCounter}`)
-                        .setEmoji('<a:partnership:123456789012345678>') // Replace with your actual custom emoji
+                        .setEmoji('<a:attention:1298284499829784596>') // Replace with your actual custom emoji
                 );
             }
 
@@ -1346,7 +1345,7 @@ async function handleCloseTicket(interaction) {
                         .setLabel('Partnership Details')
                         .setStyle(ButtonStyle.Primary)
                         .setCustomId(`partnership_details_${ticketCounter}`)
-                        .setEmoji('<a:partnership:123456789012345678>') // Replace with your actual custom emoji
+                        .setEmoji('<a:attention:1298284499829784596>') // Replace with your actual custom emoji
                 );
             }
 
