@@ -81,16 +81,27 @@ async function sendPlainText(channel, content) {
 }
 
 /**
- * Sends an embed to a channel.
+ * Sends an embed to a channel and returns the sent message.
  * @param {GuildChannel} channel - The channel to send the embed to.
  * @param {EmbedBuilder} embed - The embed to send.
  * @param {ActionRowBuilder} [components] - Optional components (buttons).
+ * @returns {Promise<Message>} - The sent message object.
  */
 async function sendEmbed(channel, embed, components) {
   const payload = { embeds: [embed] };
   if (components) payload.components = [components];
-  await channel.send(payload);
+  
+  try {
+    console.log(`Sending embed to channel ${channel.id}.`);
+    const message = await channel.send(payload);
+    console.log(`Embed sent successfully. Message ID: ${message.id}`);
+    return message;
+  } catch (error) {
+    console.error('Failed to send embed:', error);
+    throw error;
+  }
 }
+
   function getCategoryId(ticketType, isArchived = false) {
     const categoryMapping = {
       'General': isArchived ? config.archivedGeneralTicketsCategoryId : config.generalTicketsCategoryId,
@@ -382,19 +393,6 @@ async function handleInteraction(client, interaction) {
     await interaction.showModal(modal);
   }
   
-  function isValidUrl(url) {
-    const regex = /^(https?:\/\/[^\s]+)/g;
-    return regex.test(url);
-  }
-  
-  async function validateDiscordInvite(client, inviteLink) {
-    try {
-      const invite = await client.fetchInvite(inviteLink);
-      return !!invite;
-    } catch (error) {
-      return false;
-    }
-  }
   
   async function handleModalSubmission(interaction, ticketTypeKey) {
     const ticketType = ticketTypeKey
@@ -461,7 +459,6 @@ async function handleInteraction(client, interaction) {
             .setColor(0xffa500) // Orange color
             .setTitle('Staff Report Validation Failed')
             .setDescription(
-              `**Reporter User:**\n\`\`\`${interaction.user.tag}\`\`\`\n` +
               `**Reported User:**\n\`\`\`${reportedUserInput}\`\`\`\n` +
               `**Reason:**\n\`\`\`${reason}\`\`\`\n` +
               `**Proof:**\n\`\`\`${proof}\`\`\`\n\n` +
@@ -507,15 +504,7 @@ async function handleInteraction(client, interaction) {
       await handleTicketCreation(interaction, ticketType.toLowerCase());
     }
   }
-  async function validateDiscordInvite(client, inviteLink) {
-    try {
-      const invite = await client.fetchInvite(inviteLink);
-      return !!invite;
-    } catch (error) {
-      console.error('Invite validation error:', error.message);
-      return false;
-    }
-  }
+
   
   
   
@@ -547,191 +536,273 @@ async function handleInteraction(client, interaction) {
   }
   
   async function createTicketChannel(interaction, ticketType, data) {
+    console.log(`createTicketChannel called for interaction ID: ${interaction.id} with ticketType: ${ticketType}`);
+
     const { guild, user } = interaction;
-    await interaction.deferReply({ ephemeral: true });
-  
+
     try {
-      // Fetch the current ticket counter from the database
-      const [settingsRows] = await pool.execute('SELECT * FROM ticket_settings WHERE id = 1');
-      let ticketCounter = settingsRows[0].ticket_counter;
-      const prefix = '┃';
-  
-      // Process the username to remove special characters or spaces
-      let username = user.username.split(/[\s\W_]+/)[0];
-      username = username || user.username;
-  
-      const ticketChannelName = `${ticketCounter}${prefix}${username}`;
-  
-      const permissionOverwrites = getPermissionOverwrites(guild, user.id, ticketType);
-      const parentCategoryId = getCategoryId(ticketType);
-  
-      // Create the ticket channel
-      const ticketChannel = await guild.channels.create({
-        name: ticketChannelName,
-        type: ChannelType.GuildText,
-        parent: parentCategoryId,
-        permissionOverwrites,
-        topic: `[${ticketType}] Ticket for ${user.username}`,
-      });
-  
-      if (!ticketChannel) {
-        throw new Error('Failed to create the ticket channel.');
-      }
-  
-      // Send welcome message as plain text
-      await sendPlainText(ticketChannel, `Hey <@${user.id}> 👋!\nPlease wait patiently!`);
-  
-      let ticketInfoEmbed;
-      const row = new ActionRowBuilder();
-  
-      if (ticketType === 'Report' || ticketType === 'Staff Report') {
-        ticketInfoEmbed = new EmbedBuilder()
-          .setColor(0x05D9FF)
-          .setAuthor({ name: `${ticketType} Ticket`, iconURL: guild.iconURL({ dynamic: true }) })
-          .setTitle('Ticket Details')
-          .setDescription(
-            `**Issued by:** <@${user.id}>\n` +
-            `**Reported User:** ${data.reportedUserMention}\n` +
-            `**Reason:**\n> ${data.reason.replace(/\n/g, '\n> ')}\n` +
-            '```\nPlease wait patiently for staff to evaluate the evidence. In the meantime, if you have anything else to add, do so now. Refrain from pinging staff, please.\n```'
-          )
-          .setFooter({ text: 'Pika Ranked Bedwars Tickets!' })
-          .setTimestamp();
-  
-        // Add buttons
-        row.addComponents(
-          new ButtonBuilder()
-            .setCustomId('close_ticket')
-            .setLabel('Close')
-            .setStyle(ButtonStyle.Danger)
-            .setEmoji('🔒'),
-          new ButtonBuilder()
-            .setCustomId('claim_ticket')
-            .setLabel('Claim')
-            .setStyle(ButtonStyle.Success)
-            .setEmoji('✅'),
-          new ButtonBuilder()
-            .setCustomId(`evidence_${ticketCounter}`)
-            .setLabel('Evidence')
-            .setStyle(ButtonStyle.Primary)
-            .setEmoji('📁'),
-          // Add Report Details Button
-          new ButtonBuilder()
-            .setCustomId(`report_details_${ticketCounter}`)
-            .setLabel('Report Details')
-            .setStyle(ButtonStyle.Primary)
-            .setEmoji('<a:attention:1298284499829784596>') // Replace with your desired emoji
-        );
-  
-        // Save the proof URLs in the database
-        await pool.execute(
-          'INSERT INTO tickets (user_id, channel_id, ticket_number, ticket_type, reported_user, reason, proof_urls) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [
-            user.id,
-            ticketChannel.id,
-            ticketCounter,
-            ticketType,
-            data.reportedUserMention,
-            data.reason,
-            JSON.stringify(data.proofUrls),
-          ]
-        );
-      } else if (ticketType === 'Partnership') {
-        // Prepare the ticket info embed
-        ticketInfoEmbed = new EmbedBuilder()
-          .setColor(0x05D9FF)
-          .setAuthor({ name: `${ticketType} Ticket`, iconURL: guild.iconURL({ dynamic: true }) })
-          .setTitle('Ticket Details')
-          .setDescription(
-            `**Issued by:** <@${user.id}>\n` +
-            `**Server Invite:** ${data.inviteLink}\n` +
-            `**Reason for partnership:**\n> ${data.reason.replace(/\n/g, '\n> ')}\n` +
-            '```\nPlease wait patiently while we evaluate the partnership. In the meantime, if you have anything else to say do so now. Please refrain from pinging staff. Thanks!\n```'
-          )
-          .setFooter({ text: 'Pika Ranked Bedwars Tickets!' })
-          .setTimestamp();
-  
-        row.addComponents(
-          new ButtonBuilder()
-            .setCustomId('close_ticket')
-            .setLabel('Close')
-            .setStyle(ButtonStyle.Danger)
-            .setEmoji('🔒'),
-          new ButtonBuilder()
-            .setCustomId('claim_ticket')
-            .setLabel('Claim')
-            .setStyle(ButtonStyle.Success)
-            .setEmoji('<a:claim:1298228030405214269>'),
-          // Add Partnership Details Button
-          new ButtonBuilder()
-            .setCustomId(`partnership_details_${ticketCounter}`)
-            .setLabel('Partnership Details')
-            .setStyle(ButtonStyle.Primary)
-            .setEmoji('<a:info:123456789012345678>') // Replace with your desired emoji
-        );
-  
-        // Save the partnership data in the database
-        await pool.execute(
-          'INSERT INTO tickets (user_id, channel_id, ticket_number, ticket_type, invite_link, reason) VALUES (?, ?, ?, ?, ?, ?)',
-          [user.id, ticketChannel.id, ticketCounter, ticketType, data.inviteLink, data.reason]
-        );
-      } else {
-        // For General and Appeal tickets
-        ticketInfoEmbed = new EmbedBuilder()
-          .setColor(0x05D9FF)
-          .setAuthor({ name: `${ticketType} Ticket`, iconURL: guild.iconURL({ dynamic: true }) })
-          .setTitle('Ticket Instructions')
-          .setDescription('```Please wait patiently for staff to reply. In the meantime, please provide details about your issue. If no one replies, please refrain from mentioning staff. Thanks!```')
-          .setFooter({ text: 'Pika Ranked Bedwars Tickets!' });
-  
-        row.addComponents(
-          new ButtonBuilder()
-            .setCustomId('close_ticket')
-            .setLabel('Close')
-            .setStyle(ButtonStyle.Danger)
-            .setEmoji('🔒'),
-          new ButtonBuilder()
-            .setCustomId('claim_ticket')
-            .setLabel('Claim')
-            .setStyle(ButtonStyle.Success)
-            .setEmoji('<a:check:1256329093679681608>')
-        );
-  
-        // Save the ticket data in the database
-        await pool.execute(
-          'INSERT INTO tickets (user_id, channel_id, ticket_number, ticket_type) VALUES (?, ?, ?, ?)',
-          [user.id, ticketChannel.id, ticketCounter, ticketType]
-        );
-      }
-  
-      // Send the ticket details embed and receive the sent message
-      const ticketMessage = await sendEmbed(ticketChannel, ticketInfoEmbed, row);
-  
-      // Update ticket with ticket message ID
-      await pool.execute('UPDATE tickets SET ticket_message_id = ? WHERE channel_id = ?', [
-        ticketMessage.id,
-        ticketChannel.id,
-      ]);
-  
-      // Increment the ticket counter in the database
-      ticketCounter++;
-      await pool.execute('UPDATE ticket_settings SET ticket_counter = ? WHERE id = 1', [ticketCounter]);
-  
-      const confirmationEmbed = new EmbedBuilder()
-        .setColor(0x00008B)
-        .setDescription(
-          `**Your ticket has been opened.**\n⤿ Head over to <#${ticketChannel.id}> to discuss your issue with the staff.`
-        );
-  
-      await interaction.editReply({ embeds: [confirmationEmbed] });
+        // Defer the interaction
+        await interaction.deferReply({ ephemeral: true });
+        console.log('Interaction deferred successfully.');
+
+        // Validate guild and user
+        if (!guild) {
+            throw new Error('Guild is undefined.');
+        }
+
+        if (!user) {
+            throw new Error('User is undefined.');
+        }
+
+        // Fetch the current ticket counter from the database
+        const [settingsRows] = await pool.execute('SELECT * FROM ticket_settings WHERE id = 1');
+        let ticketCounter = settingsRows[0].ticket_counter;
+        const prefix = '┃';
+
+        // Process the username to remove special characters or spaces
+        let username = user.username.split(/[\s\W_]+/)[0];
+        username = username || user.username;
+
+        const ticketChannelName = `${ticketCounter}${prefix}${username}`;
+
+        const permissionOverwrites = getPermissionOverwrites(guild, user.id, ticketType);
+        const parentCategoryId = getCategoryId(ticketType);
+
+        // Validate parent category ID
+        if (!parentCategoryId) {
+            throw new Error(`Parent category ID for ticket type "${ticketType}" is undefined.`);
+        }
+
+        // Create the ticket channel
+        const ticketChannel = await guild.channels.create({
+            name: ticketChannelName,
+            type: ChannelType.GuildText,
+            parent: parentCategoryId,
+            permissionOverwrites,
+            topic: `[${ticketType}] Ticket for ${user.username}`,
+        });
+
+        if (!ticketChannel) {
+            throw new Error('Failed to create the ticket channel.');
+        }
+
+        console.log(`Ticket channel created: ${ticketChannel.name} (ID: ${ticketChannel.id})`);
+
+        // Send welcome message as plain text
+        await sendPlainText(ticketChannel, `Hey <@${user.id}> 👋!\nPlease wait patiently!`);
+        console.log('Welcome message sent to the ticket channel.');
+
+        let ticketInfoEmbed;
+        const row = new ActionRowBuilder();
+
+        // Handle different ticket types
+        if (ticketType === 'Report' || ticketType === 'Staff Report') {
+            ticketInfoEmbed = new EmbedBuilder()
+                .setColor(0x05D9FF)
+                .setAuthor({ name: `${ticketType} Ticket`, iconURL: guild.iconURL({ dynamic: true }) })
+                .setTitle('Ticket Details')
+                .setDescription(
+                    `**Issued by:** <@${user.id}>\n` +
+                    `**Reported User:** ${data.reportedUserMention}\n` +
+                    `**Reason:**\n> ${data.reason.replace(/\n/g, '\n> ')}\n` +
+                    '```\nPlease wait patiently for staff to evaluate the evidence. In the meantime, if you have anything else to add, do so now. Refrain from pinging staff, please.\n```'
+                )
+                .setFooter({ text: 'Pika Ranked Bedwars Tickets!' })
+                .setTimestamp();
+
+            // Add buttons
+            row.addComponents(
+                new ButtonBuilder()
+                    .setCustomId('close_ticket')
+                    .setLabel('Close')
+                    .setStyle(ButtonStyle.Danger)
+                    .setEmoji('🔒'),
+                new ButtonBuilder()
+                    .setCustomId('claim_ticket')
+                    .setLabel('Claim')
+                    .setStyle(ButtonStyle.Success)
+                    .setEmoji('✅'),
+                new ButtonBuilder()
+                    .setCustomId(`evidence_${ticketCounter}`)
+                    .setLabel('Evidence')
+                    .setStyle(ButtonStyle.Primary)
+                    .setEmoji('📁'),
+                new ButtonBuilder()
+                    .setCustomId(`report_details_${ticketCounter}`)
+                    .setLabel('Report Details')
+                    .setStyle(ButtonStyle.Primary)
+                    .setEmoji('<a:attention:1298284499829784596>') // Replace with your desired emoji
+            );
+
+            // Send the embed and capture the sent message
+            console.log('Preparing to send Ticket Details embed.');
+            const ticketMessage = await sendEmbed(ticketChannel, ticketInfoEmbed, row);
+
+            if (!ticketMessage) {
+                throw new Error('Failed to send the ticket embed message.');
+            }
+
+            console.log(`Ticket embed sent with Message ID: ${ticketMessage.id}`);
+
+            // Save the ticket data in the database
+            await pool.execute(
+                'INSERT INTO tickets (user_id, channel_id, ticket_number, ticket_type, reported_user, reason, proof_urls) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [
+                    user.id,
+                    ticketChannel.id,
+                    ticketCounter,
+                    ticketType,
+                    data.reportedUserMention,
+                    data.reason,
+                    JSON.stringify(data.proofUrls),
+                ]
+            );
+
+            // Update ticket with ticket message ID
+            await pool.execute('UPDATE tickets SET ticket_message_id = ? WHERE channel_id = ?', [
+                ticketMessage.id,
+                ticketChannel.id,
+            ]);
+
+        } else if (ticketType === 'Partnership') {
+            // Similar logic for Partnership tickets
+            ticketInfoEmbed = new EmbedBuilder()
+                .setColor(0x05D9FF)
+                .setAuthor({ name: `${ticketType} Ticket`, iconURL: guild.iconURL({ dynamic: true }) })
+                .setTitle('Ticket Details')
+                .setDescription(
+                    `**Issued by:** <@${user.id}>\n` +
+                    `**Server Invite:** ${data.inviteLink}\n` +
+                    `**Reason for partnership:**\n> ${data.reason.replace(/\n/g, '\n> ')}\n` +
+                    '```\nPlease wait patiently while we evaluate the partnership. In the meantime, if you have anything else to say do so now. Please refrain from pinging staff. Thanks!\n```'
+                )
+                .setFooter({ text: 'Pika Ranked Bedwars Tickets!' })
+                .setTimestamp();
+
+            // Add buttons
+            row.addComponents(
+                new ButtonBuilder()
+                    .setCustomId('close_ticket')
+                    .setLabel('Close')
+                    .setStyle(ButtonStyle.Danger)
+                    .setEmoji('🔒'),
+                new ButtonBuilder()
+                    .setCustomId('claim_ticket')
+                    .setLabel('Claim')
+                    .setStyle(ButtonStyle.Success)
+                    .setEmoji('<a:claim:1298228030405214269>'),
+                new ButtonBuilder()
+                    .setCustomId(`partnership_details_${ticketCounter}`)
+                    .setLabel('Partnership Details')
+                    .setStyle(ButtonStyle.Primary)
+                    .setEmoji('<a:attention:1298284499829784596>') // Replace with your desired emoji
+            );
+
+            // Send the embed and capture the sent message
+            console.log('Preparing to send Partnership Details embed.');
+            const ticketMessage = await sendEmbed(ticketChannel, ticketInfoEmbed, row);
+
+            if (!ticketMessage) {
+                throw new Error('Failed to send the partnership embed message.');
+            }
+
+            console.log(`Partnership embed sent with Message ID: ${ticketMessage.id}`);
+
+            // Save the partnership data in the database
+            await pool.execute(
+                'INSERT INTO tickets (user_id, channel_id, ticket_number, ticket_type, invite_link, reason) VALUES (?, ?, ?, ?, ?, ?)',
+                [user.id, ticketChannel.id, ticketCounter, ticketType, data.inviteLink, data.reason]
+            );
+
+            // Update ticket with ticket message ID
+            await pool.execute('UPDATE tickets SET ticket_message_id = ? WHERE channel_id = ?', [
+                ticketMessage.id,
+                ticketChannel.id,
+            ]);
+
+        } else {
+            // Handle other ticket types (General, Appeal)
+            ticketInfoEmbed = new EmbedBuilder()
+                .setColor(0x05D9FF)
+                .setAuthor({ name: `${ticketType} Ticket`, iconURL: guild.iconURL({ dynamic: true }) })
+                .setTitle('Ticket Instructions')
+                .setDescription('```Please wait patiently for staff to reply. In the meantime, please provide details about your issue. If no one replies, please refrain from mentioning staff. Thanks!```')
+                .setFooter({ text: 'Pika Ranked Bedwars Tickets!' })
+                .setTimestamp();
+
+            // Add buttons
+            row.addComponents(
+                new ButtonBuilder()
+                    .setCustomId('close_ticket')
+                    .setLabel('Close')
+                    .setStyle(ButtonStyle.Danger)
+                    .setEmoji('🔒'),
+                new ButtonBuilder()
+                    .setCustomId('claim_ticket')
+                    .setLabel('Claim')
+                    .setStyle(ButtonStyle.Success)
+                    .setEmoji('<a:check:1256329093679681608>')
+            );
+
+            // Send the embed and capture the sent message
+            console.log('Preparing to send General/Appeal Ticket embed.');
+            const ticketMessage = await sendEmbed(ticketChannel, ticketInfoEmbed, row);
+
+            if (!ticketMessage) {
+                throw new Error('Failed to send the general/appeal embed message.');
+            }
+
+            console.log(`General/Appeal embed sent with Message ID: ${ticketMessage.id}`);
+
+            // Save the ticket data in the database
+            await pool.execute(
+                'INSERT INTO tickets (user_id, channel_id, ticket_number, ticket_type) VALUES (?, ?, ?, ?)',
+                [user.id, ticketChannel.id, ticketCounter, ticketType]
+            );
+
+            // Update ticket with ticket message ID
+            await pool.execute('UPDATE tickets SET ticket_message_id = ? WHERE channel_id = ?', [
+                ticketMessage.id,
+                ticketChannel.id,
+            ]);
+        }
+
+        // Increment the ticket counter in the database
+        ticketCounter++;
+        await pool.execute('UPDATE ticket_settings SET ticket_counter = ? WHERE id = 1', [ticketCounter]);
+        console.log(`Ticket counter updated to ${ticketCounter}.`);
+
+        // Send confirmation embed to the user
+        const confirmationEmbed = new EmbedBuilder()
+            .setColor(0x00008B)
+            .setDescription(
+                `**Your ticket has been opened.**\n⤿ Head over to <#${ticketChannel.id}> to discuss your issue with the staff.`
+            );
+
+        await interaction.editReply({ embeds: [confirmationEmbed] });
+        console.log('Confirmation embed sent to user.');
+
     } catch (error) {
-      console.error('Failed to create a ticket channel:', error);
-      await interaction.followUp({
-        content: 'There was an error creating your ticket. Please try again later.',
-        ephemeral: true,
-      });
+        console.error('Failed to create a ticket channel:', error);
+        try {
+            if (interaction.deferred || interaction.replied) {
+                await interaction.followUp({
+                    content: 'There was an error creating your ticket. Please try again later.',
+                    ephemeral: true,
+                });
+            } else {
+                await interaction.reply({
+                    content: 'There was an error creating your ticket. Please try again later.',
+                    ephemeral: true,
+                });
+            }
+        } catch (followUpError) {
+            console.error('Error sending follow-up message:', followUpError);
+        }
     }
-  }
+}
+
+
   
   
 
@@ -923,159 +994,192 @@ async function handleCloseTicket(interaction) {
   
   async function handleClaimTicket(client, interaction, reason) {
     try {
-      console.log('Interaction received:', interaction.customId);
-      console.log('Channel:', interaction.channel.name);
-      console.log('User:', interaction.user.tag);
-  
-      const { guild, channel, user } = interaction;
-  
-      // Check if the user has the staff role
-      if (!interaction.member.roles.cache.has(config.staffRoleId)) {
-        const embed = new EmbedBuilder()
-          .setColor(0xff0000) // Red color for errors
-          .setDescription(`> Only <@&${config.staffRoleId}> can use this command.`);
-        return interaction.reply({ embeds: [embed], ephemeral: true });
-      }
-  
-      // Fetch the ticket data from the database
-      const [ticketRows] = await pool.execute('SELECT * FROM tickets WHERE channel_id = ?', [channel.id]);
-      if (ticketRows.length === 0) {
-        const errorEmbed = new EmbedBuilder()
-          .setColor(0xff0000)
-          .setDescription('Ticket not found in the database.');
-        return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-      }
-      const ticketData = ticketRows[0];
-  
-      // Update ticket status and claimed_by in the database
-      await pool.execute(
-        'UPDATE tickets SET status = ?, claimed_by = ? WHERE channel_id = ?',
-        ['claimed', user.id, channel.id]
-      );
-  
-      // Defer the reply to acknowledge the interaction
-      await interaction.deferReply({ ephemeral: true });
-  
-      const ticketCounter = ticketData.ticket_number;
-      const ticketCreatorId = ticketData.user_id;
-      const ticketCreator = await guild.members.fetch(ticketCreatorId).catch(() => null);
-      const ticketCreatorUsername = ticketCreator ? ticketCreator.user.username : 'Unknown User';
-  
-      // Extract ticket type from the database
-      const ticketType = ticketData.ticket_type || 'General';
-      const ticketTypeCapitalized = ticketType.charAt(0).toUpperCase() + ticketType.slice(1);
-  
-      console.log('Claim ticket action initiated, attempting to export chat logs.');
-      console.log(`Ticket Details:\nUser: ${ticketCreatorUsername}\nClaimed by: ${user.username}\nReason: ${reason}`);
-  
-      const outputFile = `chat_${channel.name}.html`;
-      const limit = 1000;
-      const tzInfo = 'UTC';
-      const militaryTime = true;
-  
-      // Export chat logs
-      exportChatLogs(config.token, channel.id, outputFile, limit, tzInfo, militaryTime, async (err, filePath) => {
-        if (err) {
-          console.error('Error exporting chat logs:', err);
-          return await interaction.followUp({ content: 'Failed to claim the ticket.', ephemeral: true });
+        console.log('Interaction received:', interaction.customId);
+        console.log('Channel:', interaction.channel.name);
+        console.log('User:', interaction.user.tag);
+
+        const { guild, channel, user } = interaction;
+
+        // Check if the user has the staff role
+        if (!interaction.member.roles.cache.has(config.staffRoleId)) {
+            const embed = new EmbedBuilder()
+                .setColor(0xff0000) // Red color for errors
+                .setDescription(`> Only <@&${config.staffRoleId}> can use this command.`);
+            return interaction.reply({ embeds: [embed], ephemeral: true });
         }
-  
-        console.log(`Chat logs successfully exported to ${filePath}`);
-  
-        // Send the transcript via DM to a specific user (your alt account)
-        const transcriptRecipientId = '1271511630278164514'; // Replace with your actual user ID
-        const transcriptRecipient = await client.users.fetch(transcriptRecipientId);
-        const message = await transcriptRecipient.send({ files: [filePath] });
-        const transcriptUrl = message.attachments.first()?.url;
-  
-        if (!transcriptUrl) {
-          return await interaction.followUp({ content: 'Failed to obtain transcript URL.', ephemeral: true });
+
+        // Fetch the ticket data from the database
+        const [ticketRows] = await pool.execute('SELECT * FROM tickets WHERE channel_id = ?', [channel.id]);
+        if (ticketRows.length === 0) {
+            const errorEmbed = new EmbedBuilder()
+                .setColor(0xff0000)
+                .setDescription('Ticket not found in the database.');
+            return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
         }
-  
-        // Update the ticket in the database with the transcript URL
-        await pool.execute('UPDATE tickets SET transcript_url = ? WHERE channel_id = ?', [
-          transcriptUrl,
-          channel.id,
-        ]);
-  
-        // Build the main log embed
-        const logEmbed = new EmbedBuilder()
-          .setAuthor({ name: `${ticketTypeCapitalized} Ticket`, iconURL: guild.iconURL({ dynamic: true }) })
-          .setTitle(`${ticketCounter} | ${ticketCreatorUsername}`)
-          .setColor(0x3ce1ff) // Light blue color
-          .setTimestamp()
-          .setDescription(
-            `**Ticket Claimed ➤** <t:${Math.floor(Date.now() / 1000)}:F>\n` +
-            `**Claimed by ➤** <@${user.id}>\n` +
-            `**Reason ➤** \`${reason}\``
-          );
-  
-        // Prepare buttons including "View Evidence" and "Report Details" if applicable
-        const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setLabel('View Transcript')
-            .setStyle(ButtonStyle.Link)
-            .setURL(transcriptUrl)
+        const ticketData = ticketRows[0];
+
+        // Update ticket status and claimed_by in the database
+        await pool.execute(
+            'UPDATE tickets SET status = ?, claimed_by = ? WHERE channel_id = ?',
+            ['claimed', user.id, channel.id]
         );
-  
-        if (ticketType === 'Report' || ticketType === 'Staff Report') {
-          if (ticketData.proof_urls) {
-            row.addComponents(
-              new ButtonBuilder()
-                .setLabel('View Evidence')
-                .setStyle(ButtonStyle.Primary)
-                .setCustomId(`evidence_${ticketCounter}`) // Including ticket ID
-                .setEmoji('📁')
+
+        // Defer the reply to acknowledge the interaction
+        await interaction.deferReply({ ephemeral: true });
+
+        const ticketCounter = ticketData.ticket_number;
+        const ticketCreatorId = ticketData.user_id;
+        const ticketCreator = await guild.members.fetch(ticketCreatorId).catch(() => null);
+        const ticketCreatorUsername = ticketCreator ? ticketCreator.user.username : 'Unknown User';
+
+        // Extract ticket type from the database
+        const ticketType = ticketData.ticket_type || 'General';
+        const ticketTypeCapitalized = ticketType.charAt(0).toUpperCase() + ticketType.slice(1);
+
+        console.log('Claim ticket action initiated, attempting to export chat logs.');
+        console.log(`Ticket Details:\nUser: ${ticketCreatorUsername}\nClaimed by: ${user.username}\nReason: ${reason}`);
+
+        const outputFile = `chat_${channel.name}.html`;
+        const limit = 1000;
+        const tzInfo = 'UTC';
+        const militaryTime = true;
+
+        // Export chat logs
+        exportChatLogs(config.token, channel.id, outputFile, limit, tzInfo, militaryTime, async (err, filePath) => {
+            if (err) {
+                console.error('Error exporting chat logs:', err);
+                return await interaction.followUp({ content: 'Failed to claim the ticket.', ephemeral: true });
+            }
+
+            console.log(`Chat logs successfully exported to ${filePath}`);
+
+            // Send the transcript via DM to a specific user (your alt account)
+            const transcriptRecipientId = '1271511630278164514'; // Replace with your actual user ID
+            const transcriptRecipient = await client.users.fetch(transcriptRecipientId);
+            const message = await transcriptRecipient.send({ files: [filePath] });
+            const transcriptUrl = message.attachments.first()?.url;
+
+            if (!transcriptUrl) {
+                return await interaction.followUp({ content: 'Failed to obtain transcript URL.', ephemeral: true });
+            }
+
+            // Update the ticket in the database with the transcript URL
+            await pool.execute('UPDATE tickets SET transcript_url = ? WHERE channel_id = ?', [
+                transcriptUrl,
+                channel.id,
+            ]);
+
+            // Build the main log embed
+            const logEmbed = new EmbedBuilder()
+                .setAuthor({ name: `${ticketTypeCapitalized} Ticket`, iconURL: guild.iconURL({ dynamic: true }) })
+                .setTitle(`${ticketCounter} | ${ticketCreatorUsername}`)
+                .setColor(0x3ce1ff) // Light blue color
+                .setTimestamp()
+                .setDescription(
+                    `**Ticket Claimed ➤** <t:${Math.floor(Date.now() / 1000)}:F>\n` +
+                    `**Claimed by ➤** <@${user.id}>\n` +
+                    `**Reason ➤** \`${reason}\``
+                );
+
+            // Prepare buttons for logs channel
+            const logRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setLabel('View Transcript')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(transcriptUrl)
             );
-          }
-  
-          // Add "Report Details" button
-          row.addComponents(
-            new ButtonBuilder()
-              .setLabel('Report Details')
-              .setStyle(ButtonStyle.Primary)
-              .setCustomId(`report_details_${ticketCounter}`) // Including ticket ID
-              .setEmoji('<a:attention:1298284499829784596>') // Animated emoji
-          );
-        }
-  
-        // Send the embed to the appropriate logs channel
-        const logsChannelId =
-          ['General', 'Appeal', 'Report'].includes(ticketType)
-            ? config.ticketLogsChannelId1
-            : config.ticketLogsChannelId2;
-        const logsChannel = await guild.channels.fetch(logsChannelId);
-        await logsChannel.send({ embeds: [logEmbed], components: [row] });
-  
-        // Send the embed to the ticket creator
-        if (ticketCreator) {
-          await ticketCreator.send({ embeds: [logEmbed], components: [row] }).catch(console.error);
-        }
-  
-        // Remove the exported chat log file after uploading
-        fs.unlink(filePath, (unlinkErr) => {
-          if (unlinkErr) {
-            console.error('Error deleting the exported chat log file:', unlinkErr);
-          } else {
-            console.log('Exported chat log file deleted:', filePath);
-          }
+
+            // Add "Report Details" or "Partnership Details" based on ticket type
+            if (ticketType === 'Report' || ticketType === 'Staff Report') {
+                if (ticketData.proof_urls) {
+                    logRow.addComponents(
+                        new ButtonBuilder()
+                            .setLabel('View Evidence')
+                            .setStyle(ButtonStyle.Primary)
+                            .setCustomId(`evidence_${ticketCounter}`)
+                            .setEmoji('📁')
+                    );
+                }
+
+                // Add "Report Details" button
+                logRow.addComponents(
+                    new ButtonBuilder()
+                        .setLabel('Report Details')
+                        .setStyle(ButtonStyle.Primary)
+                        .setCustomId(`report_details_${ticketCounter}`)
+                        .setEmoji('<a:attention:1298284499829784596>') // Using your specified animated emoji
+                );
+            } else if (ticketType === 'Partnership') {
+                // Add "Partnership Details" button
+                logRow.addComponents(
+                    new ButtonBuilder()
+                        .setLabel('Partnership Details')
+                        .setStyle(ButtonStyle.Primary)
+                        .setCustomId(`partnership_details_${ticketCounter}`)
+                        .setEmoji('<a:partnership:123456789012345678>') // Replace with your actual custom emoji
+                );
+            }
+
+            // Determine the appropriate logs channel based on ticket type
+            let logsChannelId;
+            if (ticketType === 'Staff Report' || ticketType === 'Partnership') {
+                logsChannelId = config.ticketLogsChannelId2;
+            } else {
+                logsChannelId = config.ticketLogsChannelId1;
+            }
+
+            const logsChannel = await guild.channels.fetch(logsChannelId);
+            if (!logsChannel) {
+                console.error(`Logs channel with ID ${logsChannelId} not found.`);
+                return await interaction.followUp({ content: 'Failed to locate the logs channel.', ephemeral: true });
+            }
+
+            await logsChannel.send({ embeds: [logEmbed], components: [logRow] });
+            console.log('Log embed sent to the logs channel.');
+
+            // Build the embed for the user (DM) with only the "View Transcript" button
+            const userLogEmbed = new EmbedBuilder(logEmbed.data); // Clone the logEmbed
+            // Optionally, you can customize the embed further for the user
+
+            // Prepare buttons for user DM
+            const userRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setLabel('View Transcript')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(transcriptUrl)
+            );
+
+            // Send the embed to the ticket creator (DM)
+            if (ticketCreator) {
+                await ticketCreator.send({ embeds: [userLogEmbed], components: [userRow] }).catch(console.error);
+                console.log(`Log embed sent to user DM: ${ticketCreator.user.tag}`);
+            }
+
+            // Remove the exported chat log file after uploading
+            fs.unlink(filePath, (unlinkErr) => {
+                if (unlinkErr) {
+                    console.error('Error deleting the exported chat log file:', unlinkErr);
+                } else {
+                    console.log('Exported chat log file deleted:', filePath);
+                }
+            });
+
+            // Send a confirmation message before deleting the channel
+            await interaction.followUp({ content: 'Ticket successfully claimed and closed.', ephemeral: true });
+
+            // Delete the ticket channel
+            await channel.delete();
+            console.log(`Ticket channel ${channel.name} deleted.`);
         });
-  
-        // Send a confirmation message before deleting the channel
-        await interaction.followUp({ content: 'Ticket successfully claimed and closed.', ephemeral: true });
-  
-        // Delete the ticket channel
-        await channel.delete();
-      });
     } catch (error) {
-      console.error('Error claiming the ticket:', error);
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: 'Failed to claim the ticket.', ephemeral: true });
-      } else {
-        await interaction.reply({ content: 'Failed to claim the ticket.', ephemeral: true });
-      }
+        console.error('Error claiming the ticket:', error);
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({ content: 'Failed to claim the ticket.', ephemeral: true });
+        } else {
+            await interaction.reply({ content: 'Failed to claim the ticket.', ephemeral: true });
+        }
     }
-  }
+}
   
   
   
@@ -1127,152 +1231,186 @@ async function handleCloseTicket(interaction) {
   
   async function handleDeleteTicket(client, interaction, reason) {
     try {
-      const { guild, channel, user } = interaction;
-  
-      // Check if the user has the staff role
-      if (!interaction.member.roles.cache.has(config.staffRoleId)) {
-        const embed = new EmbedBuilder()
-          .setColor(0xff0000) // Red color for errors
-          .setDescription(`> Only <@&${config.staffRoleId}> can use this command.`);
-        return interaction.reply({ embeds: [embed], ephemeral: true });
-      }
-  
-      // Fetch the ticket data from the database
-      const [ticketRows] = await pool.execute('SELECT * FROM tickets WHERE channel_id = ?', [channel.id]);
-      if (ticketRows.length === 0) {
-        const errorEmbed = new EmbedBuilder()
-          .setColor(0xff0000)
-          .setDescription('Ticket not found in the database.');
-        return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-      }
-      const ticketData = ticketRows[0];
-  
-      // Update ticket status in the database
-      await pool.execute('UPDATE tickets SET status = ? WHERE channel_id = ?', ['deleted', channel.id]);
-  
-      // Defer the reply to acknowledge the interaction
-      await interaction.deferReply({ ephemeral: true });
-  
-      const ticketCounter = ticketData.ticket_number;
-      const ticketCreatorId = ticketData.user_id;
-      const ticketCreator = await guild.members.fetch(ticketCreatorId).catch(() => null);
-      const ticketCreatorUsername = ticketCreator ? ticketCreator.user.username : 'Unknown User';
-  
-      // Extract ticket type from the database
-      const ticketType = ticketData.ticket_type || 'General';
-      const ticketTypeCapitalized = ticketType.charAt(0).toUpperCase() + ticketType.slice(1);
-  
-      console.log('Delete ticket action initiated, attempting to export chat logs.');
-      console.log(`Ticket Details:\nUser: ${ticketCreatorUsername}\nDeleted by: ${user.username}\nReason: ${reason}`);
-  
-      const outputFile = `chat_${channel.name}.html`;
-      const limit = 1000;
-      const tzInfo = 'UTC';
-      const militaryTime = true;
-  
-      // Export chat logs
-      exportChatLogs(config.token, channel.id, outputFile, limit, tzInfo, militaryTime, async (err, filePath) => {
-        if (err) {
-          console.error('Error exporting chat logs:', err);
-          return await interaction.followUp({ content: 'Failed to delete the ticket.', ephemeral: true });
+        const { guild, channel, user } = interaction;
+
+        // Check if the user has the staff role
+        if (!interaction.member.roles.cache.has(config.staffRoleId)) {
+            const embed = new EmbedBuilder()
+                .setColor(0xff0000) // Red color for errors
+                .setDescription(`> Only <@&${config.staffRoleId}> can use this command.`);
+            return interaction.reply({ embeds: [embed], ephemeral: true });
         }
-  
-        console.log(`Chat logs successfully exported to ${filePath}`);
-  
-        // Send the transcript via DM to a specific user (your alt account)
-        const transcriptRecipientId = '1271511630278164514'; // Replace with your actual user ID
-        const transcriptRecipient = await client.users.fetch(transcriptRecipientId);
-        const message = await transcriptRecipient.send({ files: [filePath] });
-        const transcriptUrl = message.attachments.first()?.url;
-  
-        if (!transcriptUrl) {
-          return await interaction.followUp({ content: 'Failed to obtain transcript URL.', ephemeral: true });
+
+        // Fetch the ticket data from the database
+        const [ticketRows] = await pool.execute('SELECT * FROM tickets WHERE channel_id = ?', [channel.id]);
+        if (ticketRows.length === 0) {
+            const errorEmbed = new EmbedBuilder()
+                .setColor(0xff0000)
+                .setDescription('Ticket not found in the database.');
+            return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
         }
-  
-        // Update the ticket in the database with the transcript URL
-        await pool.execute('UPDATE tickets SET transcript_url = ? WHERE channel_id = ?', [
-          transcriptUrl,
-          channel.id,
-        ]);
-  
-        // Build the main log embed
-        const logEmbed = new EmbedBuilder()
-          .setAuthor({ name: `${ticketTypeCapitalized} Ticket`, iconURL: guild.iconURL({ dynamic: true }) })
-          .setTitle(`${ticketCounter} | ${ticketCreatorUsername}`)
-          .setColor(0xbd0000) // Dark red color for deletions
-          .setTimestamp()
-          .setDescription(
-            `**Ticket Deleted ➤** <t:${Math.floor(Date.now() / 1000)}:F>\n` +
-            `**Deleted by ➤** <@${user.id}>\n` +
-            `**Reason ➤** \`${reason}\``
-          );
-  
-        // Prepare buttons including "View Evidence" and "Report Details" if applicable
-        const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setLabel('View Transcript')
-            .setStyle(ButtonStyle.Link)
-            .setURL(transcriptUrl)
-        );
-  
-        if (ticketType === 'Report' || ticketType === 'Staff Report') {
-          if (ticketData.proof_urls) {
-            row.addComponents(
-              new ButtonBuilder()
-                .setLabel('View Evidence')
-                .setStyle(ButtonStyle.Primary)
-                .setCustomId(`evidence_${ticketCounter}`) // Including ticket ID
-                .setEmoji('📁')
+        const ticketData = ticketRows[0];
+
+        // Update ticket status in the database
+        await pool.execute('UPDATE tickets SET status = ? WHERE channel_id = ?', ['deleted', channel.id]);
+
+        // Defer the reply to acknowledge the interaction
+        await interaction.deferReply({ ephemeral: true });
+
+        const ticketCounter = ticketData.ticket_number;
+        const ticketCreatorId = ticketData.user_id;
+        const ticketCreator = await guild.members.fetch(ticketCreatorId).catch(() => null);
+        const ticketCreatorUsername = ticketCreator ? ticketCreator.user.username : 'Unknown User';
+
+        // Extract ticket type from the database
+        const ticketType = ticketData.ticket_type || 'General';
+        const ticketTypeCapitalized = ticketType.charAt(0).toUpperCase() + ticketType.slice(1);
+
+        console.log('Delete ticket action initiated, attempting to export chat logs.');
+        console.log(`Ticket Details:\nUser: ${ticketCreatorUsername}\nDeleted by: ${user.username}\nReason: ${reason}`);
+
+        const outputFile = `chat_${channel.name}.html`;
+        const limit = 1000;
+        const tzInfo = 'UTC';
+        const militaryTime = true;
+
+        // Export chat logs
+        exportChatLogs(config.token, channel.id, outputFile, limit, tzInfo, militaryTime, async (err, filePath) => {
+            if (err) {
+                console.error('Error exporting chat logs:', err);
+                return await interaction.followUp({ content: 'Failed to delete the ticket.', ephemeral: true });
+            }
+
+            console.log(`Chat logs successfully exported to ${filePath}`);
+
+            // Send the transcript via DM to a specific user (your alt account)
+            const transcriptRecipientId = '1271511630278164514'; // Replace with your actual user ID
+            const transcriptRecipient = await client.users.fetch(transcriptRecipientId);
+            const message = await transcriptRecipient.send({ files: [filePath] });
+            const transcriptUrl = message.attachments.first()?.url;
+
+            if (!transcriptUrl) {
+                return await interaction.followUp({ content: 'Failed to obtain transcript URL.', ephemeral: true });
+            }
+
+            // Update the ticket in the database with the transcript URL
+            await pool.execute('UPDATE tickets SET transcript_url = ? WHERE channel_id = ?', [
+                transcriptUrl,
+                channel.id,
+            ]);
+
+            // Build the main log embed
+            const logEmbed = new EmbedBuilder()
+                .setAuthor({ name: `${ticketTypeCapitalized} Ticket`, iconURL: guild.iconURL({ dynamic: true }) })
+                .setTitle(`${ticketCounter} | ${ticketCreatorUsername}`)
+                .setColor(0xbd0000) // Dark red color for deletions
+                .setTimestamp()
+                .setDescription(
+                    `**Ticket Deleted ➤** <t:${Math.floor(Date.now() / 1000)}:F>\n` +
+                    `**Deleted by ➤** <@${user.id}>\n` +
+                    `**Reason ➤** \`${reason}\``
+                );
+
+            // Prepare buttons for logs channel
+            const logRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setLabel('View Transcript')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(transcriptUrl)
             );
-          }
-  
-          // Add "Report Details" button
-          row.addComponents(
-            new ButtonBuilder()
-              .setLabel('Report Details')
-              .setStyle(ButtonStyle.Primary)
-              .setCustomId(`report_details_${ticketCounter}`) // Including ticket ID
-              .setEmoji('<a:attention:1298284499829784596>') // Animated emoji
-          );
-        }
-  
-        // Send the embed to the appropriate logs channel
-        const logsChannelId =
-          ['General', 'Appeal', 'Report'].includes(ticketType)
-            ? config.ticketLogsChannelId1
-            : config.ticketLogsChannelId2;
-        const logsChannel = await guild.channels.fetch(logsChannelId);
-        await logsChannel.send({ embeds: [logEmbed], components: [row] });
-  
-        // Send the embed to the ticket creator
-        if (ticketCreator) {
-          await ticketCreator.send({ embeds: [logEmbed], components: [row] }).catch(console.error);
-        }
-  
-        // Remove the exported chat log file after uploading
-        fs.unlink(filePath, (unlinkErr) => {
-          if (unlinkErr) {
-            console.error('Error deleting the exported chat log file:', unlinkErr);
-          } else {
-            console.log('Exported chat log file deleted:', filePath);
-          }
+
+            // Add "Report Details" or "Partnership Details" based on ticket type
+            if (ticketType === 'Report' || ticketType === 'Staff Report') {
+                if (ticketData.proof_urls) {
+                    logRow.addComponents(
+                        new ButtonBuilder()
+                            .setLabel('View Evidence')
+                            .setStyle(ButtonStyle.Primary)
+                            .setCustomId(`evidence_${ticketCounter}`)
+                            .setEmoji('📁')
+                    );
+                }
+
+                // Add "Report Details" button
+                logRow.addComponents(
+                    new ButtonBuilder()
+                        .setLabel('Report Details')
+                        .setStyle(ButtonStyle.Primary)
+                        .setCustomId(`report_details_${ticketCounter}`)
+                        .setEmoji('<a:attention:1298284499829784596>') // Using your specified animated emoji
+                );
+            } else if (ticketType === 'Partnership') {
+                // Add "Partnership Details" button
+                logRow.addComponents(
+                    new ButtonBuilder()
+                        .setLabel('Partnership Details')
+                        .setStyle(ButtonStyle.Primary)
+                        .setCustomId(`partnership_details_${ticketCounter}`)
+                        .setEmoji('<a:partnership:123456789012345678>') // Replace with your actual custom emoji
+                );
+            }
+
+            // Determine the appropriate logs channel based on ticket type
+            let logsChannelId;
+            if (ticketType === 'Staff Report' || ticketType === 'Partnership') {
+                logsChannelId = config.ticketLogsChannelId2;
+            } else {
+                logsChannelId = config.ticketLogsChannelId1;
+            }
+
+            const logsChannel = await guild.channels.fetch(logsChannelId);
+            if (!logsChannel) {
+                console.error(`Logs channel with ID ${logsChannelId} not found.`);
+                return await interaction.followUp({ content: 'Failed to locate the logs channel.', ephemeral: true });
+            }
+
+            await logsChannel.send({ embeds: [logEmbed], components: [logRow] });
+            console.log('Log embed sent to the logs channel.');
+
+            // Build the embed for the user (DM) with only the "View Transcript" button
+            const userLogEmbed = new EmbedBuilder(logEmbed.data); // Clone the logEmbed
+            // Optionally, you can customize the embed further for the user
+
+            // Prepare buttons for user DM
+            const userRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setLabel('View Transcript')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(transcriptUrl)
+            );
+
+            // Send the embed to the ticket creator (DM)
+            if (ticketCreator) {
+                await ticketCreator.send({ embeds: [userLogEmbed], components: [userRow] }).catch(console.error);
+                console.log(`Log embed sent to user DM: ${ticketCreator.user.tag}`);
+            }
+
+            // Remove the exported chat log file after uploading
+            fs.unlink(filePath, (unlinkErr) => {
+                if (unlinkErr) {
+                    console.error('Error deleting the exported chat log file:', unlinkErr);
+                } else {
+                    console.log('Exported chat log file deleted:', filePath);
+                }
+            });
+
+            // Send a confirmation message before deleting the channel
+            await interaction.followUp({ content: 'Ticket successfully deleted.', ephemeral: true });
+
+            // Delete the ticket channel
+            await channel.delete();
+            console.log(`Ticket channel ${channel.name} deleted.`);
         });
-  
-        // Send a confirmation message before deleting the channel
-        await interaction.followUp({ content: 'Ticket successfully deleted.', ephemeral: true });
-  
-        // Delete the ticket channel
-        await channel.delete();
-      });
     } catch (error) {
-      console.error('Error deleting the ticket:', error);
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: 'Failed to delete the ticket.', ephemeral: true });
-      } else {
-        await interaction.reply({ content: 'Failed to delete the ticket.', ephemeral: true });
-      }
+        console.error('Error deleting the ticket:', error);
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({ content: 'Failed to delete the ticket.', ephemeral: true });
+        } else {
+            await interaction.reply({ content: 'Failed to delete the ticket.', ephemeral: true });
+        }
     }
-  }
+}
+
    
   
   
