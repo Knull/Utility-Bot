@@ -25,6 +25,72 @@ const {
     connectionLimit: 10,
     queueLimit: 0,
   });
+  const axios = require('axios');
+
+/**
+ * Validates whether a given URL points to an allowed media type.
+ * @param {string} url - The URL to validate.
+ * @returns {Promise<boolean>} - Returns true if valid, else false.
+ */
+async function isValidMediaUrl(url) {
+  try {
+    const response = await axios.head(url, { timeout: 5000 });
+    const contentType = response.headers['content-type'];
+    // Define allowed MIME types
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'video/mp4',
+      'video/mpeg',
+      'video/quicktime',
+      'application/pdf', // If PDFs are allowed as proof
+      // Add more as needed
+    ];
+    return allowedTypes.includes(contentType);
+  } catch (error) {
+    console.error(`Failed to validate URL: ${url}`, error.message);
+    return false;
+  }
+}
+
+/**
+ * Validates a Discord invite link.
+ * @param {Client} client - The Discord client.
+ * @param {string} inviteLink - The invite link to validate.
+ * @returns {Promise<boolean>} - Returns true if valid, else false.
+ */
+async function validateDiscordInvite(client, inviteLink) {
+  try {
+    const invite = await client.fetchInvite(inviteLink);
+    return !!invite;
+  } catch (error) {
+    console.error('Invite validation error:', error.message);
+    return false;
+  }
+}
+
+/**
+ * Sends a plain text message to a channel and returns the sent message.
+ * @param {GuildChannel} channel - The channel to send the message to.
+ * @param {string} content - The plain text content.
+ * @returns {Promise<Message>} - The sent message object.
+ */
+async function sendPlainText(channel, content) {
+  return await channel.send(content);
+}
+
+/**
+ * Sends an embed to a channel.
+ * @param {GuildChannel} channel - The channel to send the embed to.
+ * @param {EmbedBuilder} embed - The embed to send.
+ * @param {ActionRowBuilder} [components] - Optional components (buttons).
+ */
+async function sendEmbed(channel, embed, components) {
+  const payload = { embeds: [embed] };
+  if (components) payload.components = [components];
+  await channel.send(payload);
+}
   function getCategoryId(ticketType, isArchived = false) {
     const categoryMapping = {
       'General': isArchived ? config.archivedGeneralTicketsCategoryId : config.generalTicketsCategoryId,
@@ -83,7 +149,7 @@ const {
     }
   }
   
-  async function handleInteraction(client, interaction) {
+async function handleInteraction(client, interaction) {
     try {
       if (interaction.isButton()) {
         const { customId } = interaction;
@@ -91,6 +157,8 @@ const {
   
         if (customId.startsWith('evidence_')) {
           await handleEvidenceButton(interaction);
+        } else if (customId.startsWith('report_details_')) {
+          await handleReportDetails(interaction);
         } else if (customId.startsWith('partnership_details_')) {
           await handlePartnershipDetails(interaction);
         } else {
@@ -119,6 +187,9 @@ const {
               break;
             case 'reopen_ticket':
               await handleReopenTicket(interaction);
+              break;
+            default:
+              console.warn(`Unhandled button customId: ${customId}`);
               break;
           }
         }
@@ -165,6 +236,8 @@ const {
     }
   }
   
+  
+  
   async function handleEvidenceButton(interaction) {
     const ticketNumber = interaction.customId.split('_').pop();
   
@@ -210,27 +283,45 @@ const {
   }
   
   async function handlePartnershipDetails(interaction) {
-    const ticketNumber = interaction.customId.split('_').pop();
+    try {
+      const channel = interaction.channel;
+      const guild = interaction.guild;
   
-    // Fetch the ticket data from the database using ticket_number
-    const [ticketRows] = await pool.execute('SELECT * FROM tickets WHERE ticket_number = ?', [ticketNumber]);
-    if (ticketRows.length === 0) {
-      return interaction.reply({ content: 'Ticket not found.', ephemeral: true });
+      // Extract ticket number from customId
+      const ticketNumber = interaction.customId.split('_').pop();
+  
+      // Fetch the ticket data from the database
+      const [ticketRows] = await pool.execute('SELECT * FROM tickets WHERE ticket_number = ?', [ticketNumber]);
+      if (ticketRows.length === 0) {
+        return interaction.reply({ content: 'Ticket not found in the database.', ephemeral: true });
+      }
+      const ticketData = ticketRows[0];
+  
+      // Extract necessary data
+      const ticketType = ticketData.ticket_type;
+      const issuedBy = `<@${ticketData.user_id}>`;
+      const inviteLink = ticketData.invite_link;
+      const reason = ticketData.reason.replace(/\n/g, '\n> ');
+  
+      // Create the detailed partnership embed
+      const partnershipDetailsEmbed = new EmbedBuilder()
+        .setColor(0x3498db) // Example color
+        .setAuthor({ name: `Ticket | ${ticketNumber}`, iconURL: guild.iconURL({ dynamic: true }) })
+        .setTitle(`${ticketType} Details`)
+        .setDescription(
+          `**Issued by:** ${issuedBy}\n` +
+          `**Server Invite:** [Click Here](${inviteLink})\n` +
+          `**Reason for Partnership:**\n> ${reason}`
+        )
+        .setTimestamp();
+  
+      await interaction.reply({ embeds: [partnershipDetailsEmbed], ephemeral: true });
+    } catch (error) {
+      console.error('Error handling partnership details:', error);
+      await interaction.reply({ content: 'Failed to retrieve partnership details.', ephemeral: true });
     }
-    const ticketData = ticketRows[0];
-  
-    // Build the details embed
-    const detailsEmbed = new EmbedBuilder()
-      .setTitle('Partnership Details')
-      .setDescription(
-        `**Server Invite:** ${ticketData.invite_link}\n` +
-        `**Reason:**\n> ${ticketData.reason.replace(/\n/g, '\n> ')}`
-      )
-      .setColor(0x00ff00)
-      .setTimestamp();
-  
-    await interaction.reply({ embeds: [detailsEmbed], ephemeral: true });
   }
+  
     
   async function showTicketModal(interaction, customId) {
     const ticketTypeMap = {
@@ -314,16 +405,29 @@ const {
     const data = {};
     const fields = interaction.fields;
   
-    // Check if the ticket type is 'Report' or 'Staff Report'
     if (ticketType === 'Report' || ticketType === 'Staff Report') {
       const reportedUserInput = fields.getTextInputValue('reported_user');
       const reason = fields.getTextInputValue('reason');
       const proof = fields.getTextInputValue('proof');
   
-      // Validate and process the proof URLs
+      // Split and filter proof URLs
       const proofUrls = proof.split(/\s+/).filter((url) => url.startsWith('http'));
   
-      // Attempt to find the reported user in the guild
+      // Validate all proof URLs concurrently
+      const validationPromises = proofUrls.map((url) => isValidMediaUrl(url));
+      const validationResults = await Promise.all(validationPromises);
+  
+      // Check if all URLs are valid
+      const allValid = validationResults.every((result) => result === true);
+      if (!allValid) {
+        await interaction.reply({
+          content: 'One or more proof URLs are invalid or unsupported. Please ensure all provided URLs point to valid media files.',
+          ephemeral: true,
+        });
+        return;
+      }
+  
+      // Proceed to find the reported member
       const guild = interaction.guild;
       let reportedMember;
   
@@ -348,25 +452,68 @@ const {
         return;
       }
   
-      // Save the reported user ID and mention
+      if (ticketType === 'Staff Report') {
+        // Check if the reported user has the staff role
+        const isStaff = reportedMember.roles.cache.has(config.staffRoleId);
+        if (!isStaff) {
+          // Instruct to create a standard report ticket
+          const reportDetailsEmbed = new EmbedBuilder()
+            .setColor(0xffa500) // Orange color
+            .setTitle('Staff Report Validation Failed')
+            .setDescription(
+              `**Reporter User:**\n\`\`\`${interaction.user.tag}\`\`\`\n` +
+              `**Reported User:**\n\`\`\`${reportedUserInput}\`\`\`\n` +
+              `**Reason:**\n\`\`\`${reason}\`\`\`\n` +
+              `**Proof:**\n\`\`\`${proof}\`\`\`\n\n` +
+              `The user you reported does not have the staff role. Please create a **standard report ticket** instead.`
+            )
+            .setTimestamp();
+  
+          await interaction.reply({ embeds: [reportDetailsEmbed], ephemeral: true });
+          return;
+        }
+      }
+  
+      // If the ticket is valid, proceed
       data.reportedUserId = reportedMember.id;
       data.reportedUserMention = `<@${reportedMember.id}>`;
-  
       data.reason = reason;
       data.proofUrls = proofUrls;
   
       // Proceed to create the ticket channel with collected data
       await createTicketChannel(interaction, ticketType, data);
     } else if (ticketType === 'Partnership') {
-      // Handle partnership ticket data
       const inviteLink = fields.getTextInputValue('invite_link');
       const reason = fields.getTextInputValue('reason');
+  
+      // Validate the invite link
+      const isValidInvite = await validateDiscordInvite(interaction.client, inviteLink);
+      if (!isValidInvite) {
+        await interaction.reply({
+          content: 'The provided Discord invite link is invalid or expired. Please provide a valid invite link.',
+          ephemeral: true,
+        });
+        return;
+      }
   
       data.inviteLink = inviteLink;
       data.reason = reason;
   
       // Proceed to create the ticket channel with collected data
       await createTicketChannel(interaction, ticketType, data);
+    } else {
+      // Handle other ticket types (e.g., General, Appeal)
+      // Assuming similar validation if needed
+      await handleTicketCreation(interaction, ticketType.toLowerCase());
+    }
+  }
+  async function validateDiscordInvite(client, inviteLink) {
+    try {
+      const invite = await client.fetchInvite(inviteLink);
+      return !!invite;
+    } catch (error) {
+      console.error('Invite validation error:', error.message);
+      return false;
     }
   }
   
@@ -431,16 +578,19 @@ const {
         throw new Error('Failed to create the ticket channel.');
       }
   
+      // Send welcome message as plain text
+      await sendPlainText(ticketChannel, `Hey <@${user.id}> 👋!\nPlease wait patiently!`);
+  
       let ticketInfoEmbed;
       const row = new ActionRowBuilder();
   
       if (ticketType === 'Report' || ticketType === 'Staff Report') {
         ticketInfoEmbed = new EmbedBuilder()
-          .setColor(0x05D9FF) // Updated color
+          .setColor(0x05D9FF)
           .setAuthor({ name: `${ticketType} Ticket`, iconURL: guild.iconURL({ dynamic: true }) })
           .setTitle('Ticket Details')
           .setDescription(
-            `**Issued by:** <@${user.id}>\n` + // Added "Issued by:"
+            `**Issued by:** <@${user.id}>\n` +
             `**Reported User:** ${data.reportedUserMention}\n` +
             `**Reason:**\n> ${data.reason.replace(/\n/g, '\n> ')}\n` +
             '```\nPlease wait patiently for staff to evaluate the evidence. In the meantime, if you have anything else to add, do so now. Refrain from pinging staff, please.\n```'
@@ -464,7 +614,13 @@ const {
             .setCustomId(`evidence_${ticketCounter}`)
             .setLabel('Evidence')
             .setStyle(ButtonStyle.Primary)
-            .setEmoji('📁')
+            .setEmoji('📁'),
+          // Add Report Details Button
+          new ButtonBuilder()
+            .setCustomId(`report_details_${ticketCounter}`)
+            .setLabel('Report Details')
+            .setStyle(ButtonStyle.Primary)
+            .setEmoji('<a:attention:1298284499829784596>') // Replace with your desired emoji
         );
   
         // Save the proof URLs in the database
@@ -475,7 +631,7 @@ const {
             ticketChannel.id,
             ticketCounter,
             ticketType,
-            data.reportedUserMention, // Correctly referenced
+            data.reportedUserMention,
             data.reason,
             JSON.stringify(data.proofUrls),
           ]
@@ -483,11 +639,11 @@ const {
       } else if (ticketType === 'Partnership') {
         // Prepare the ticket info embed
         ticketInfoEmbed = new EmbedBuilder()
-          .setColor(0x05D9FF) // Updated color for consistency
+          .setColor(0x05D9FF)
           .setAuthor({ name: `${ticketType} Ticket`, iconURL: guild.iconURL({ dynamic: true }) })
           .setTitle('Ticket Details')
           .setDescription(
-            `**Issued by:** <@${user.id}>\n` + // Added "Issued by:"
+            `**Issued by:** <@${user.id}>\n` +
             `**Server Invite:** ${data.inviteLink}\n` +
             `**Reason for partnership:**\n> ${data.reason.replace(/\n/g, '\n> ')}\n` +
             '```\nPlease wait patiently while we evaluate the partnership. In the meantime, if you have anything else to say do so now. Please refrain from pinging staff. Thanks!\n```'
@@ -506,6 +662,12 @@ const {
             .setLabel('Claim')
             .setStyle(ButtonStyle.Success)
             .setEmoji('<a:claim:1298228030405214269>'),
+          // Add Partnership Details Button
+          new ButtonBuilder()
+            .setCustomId(`partnership_details_${ticketCounter}`)
+            .setLabel('Partnership Details')
+            .setStyle(ButtonStyle.Primary)
+            .setEmoji('<a:info:123456789012345678>') // Replace with your desired emoji
         );
   
         // Save the partnership data in the database
@@ -516,7 +678,7 @@ const {
       } else {
         // For General and Appeal tickets
         ticketInfoEmbed = new EmbedBuilder()
-          .setColor(0x05D9FF) // Updated color
+          .setColor(0x05D9FF)
           .setAuthor({ name: `${ticketType} Ticket`, iconURL: guild.iconURL({ dynamic: true }) })
           .setTitle('Ticket Instructions')
           .setDescription('```Please wait patiently for staff to reply. In the meantime, please provide details about your issue. If no one replies, please refrain from mentioning staff. Thanks!```')
@@ -542,13 +704,8 @@ const {
         );
       }
   
-      // Send welcome message as an embed
-      const welcomeEmbed = new EmbedBuilder()
-        .setColor(0x05D9FF) // Consistent color
-        .setDescription(`Hey <@${user.id}> 👋!\nPlease wait patiently!`);
-  
-      await ticketChannel.send({ embeds: [welcomeEmbed] });
-      const ticketMessage = await ticketChannel.send({ embeds: [ticketInfoEmbed], components: [row] });
+      // Send the ticket details embed and receive the sent message
+      const ticketMessage = await sendEmbed(ticketChannel, ticketInfoEmbed, row);
   
       // Update ticket with ticket message ID
       await pool.execute('UPDATE tickets SET ticket_message_id = ? WHERE channel_id = ?', [
@@ -577,18 +734,7 @@ const {
   }
   
   
-  async function sendProofMessages(channel, proofUrls) {
-    for (const url of proofUrls) {
-      try {
-        const embed = new EmbedBuilder().setTitle('Evidence').setImage(url);
-        await channel.send({ embeds: [embed] });
-      } catch (error) {
-        console.error('Error sending proof message:', error);
-        // If cannot send as embed, send the URL directly
-        await channel.send(`Proof URL: ${url}`);
-      }
-    }
-  }
+
 async function handleTicketCreation(interaction, type) {
     const { guild, user } = interaction;
 
@@ -936,17 +1082,19 @@ async function handleCloseTicket(interaction) {
   async function handleReportDetails(interaction) {
     try {
       const channel = interaction.channel;
-      const guild = interaction.guild; // Ensure guild is available
+      const guild = interaction.guild;
+  
+      // Extract ticket number from customId
+      const ticketNumber = interaction.customId.split('_').pop();
   
       // Fetch the ticket data from the database
-      const [ticketRows] = await pool.execute('SELECT * FROM tickets WHERE channel_id = ?', [channel.id]);
+      const [ticketRows] = await pool.execute('SELECT * FROM tickets WHERE ticket_number = ?', [ticketNumber]);
       if (ticketRows.length === 0) {
         return interaction.reply({ content: 'Ticket not found in the database.', ephemeral: true });
       }
       const ticketData = ticketRows[0];
   
       // Extract necessary data
-      const ticketNumber = ticketData.ticket_number;
       const ticketType = ticketData.ticket_type;
       const issuedBy = `<@${ticketData.user_id}>`;
       const reportedUser = ticketData.reported_user; // Stored as <@ID>
@@ -970,6 +1118,7 @@ async function handleCloseTicket(interaction) {
       await interaction.reply({ content: 'Failed to retrieve report details.', ephemeral: true });
     }
   }
+  
   
   async function handleClaimCommand(interaction, reason) {
     // The implementation is similar to handleClaimTicket
