@@ -498,130 +498,132 @@ client.on('interactionCreate', async (interaction) => {
         });
     }
 
-    // Define roles that can use the command (Admin+)
-    const allowedRoleIds = [
-        config.AdminRoleId,
-        config.ManagerRoleId,
-        config.HeadDeveloperRoleId,
-        config.OwnerRoleId,
-    ];
-
-    // Check if the user has one of the allowed roles
-    const member = interaction.member;
-    const hasPermission = member.roles.cache.some((role) =>
-        allowedRoleIds.includes(role.id)
-    );
-
-    if (!hasPermission) {
-        return interaction.reply({
-            content: 'You do not have permission to use this command.',
-            ephemeral: true,
-        });
-    }
-
     const commandName = interaction.commandName;
 
-    if (['departure', 'return', 'promote'].includes(commandName)) {
-        await interaction.deferReply({ ephemeral: true });
+    // List of commands that require permission checks
+    const restrictedCommands = ['departure', 'return', 'promote'];
 
-        const announcementChannel = interaction.guild.channels.cache.get(
-            config.announcementChannelId
+    if (restrictedCommands.includes(commandName)) {
+        // Define roles that can use the command (Admin+)
+        const allowedRoleIds = [
+            config.AdminRoleId,
+            config.ManagerRoleId,
+            config.HeadDeveloperRoleId,
+            config.OwnerRoleId,
+        ];
+
+        // Check if the user has one of the allowed roles
+        const member = interaction.member;
+        const hasPermission = member.roles.cache.some((role) =>
+            allowedRoleIds.includes(role.id)
         );
-        if (!announcementChannel) {
-            return interaction.editReply({
-                content: 'Announcement channel not found.',
-                ephemeral: true,
-            });
+
+        if (!hasPermission) {
+            // Fetch role mentions
+            const roleMentions = allowedRoleIds
+                .map((roleId) => `<@&${roleId}>`)
+                .join('\n');
+
+            // Create an embed to inform the user
+            const embed = new EmbedBuilder()
+                .setColor('#FF0000') // Red color for error
+                .setTitle('Insufficient Permissions')
+                .setDescription(
+                    `Only members with these roles can use this command:\n${roleMentions}`
+                )
+                .setFooter({
+                    text: interaction.guild.name,
+                    iconURL: interaction.guild.iconURL(),
+                })
+                .setTimestamp();
+
+            return interaction.reply({ embeds: [embed], ephemeral: true });
         }
 
-        const userOption = interaction.options.getUser('user');
-        const roleOption = interaction.options.getRole('role');
+        // Proceed with the command
+        if (['departure', 'return', 'promote'].includes(commandName)) {
+            await interaction.deferReply({ ephemeral: true });
 
-        // Fetch the member object of the user
-        const user = await interaction.guild.members.fetch(userOption.id).catch(() => null);
-        if (!user) {
-            return interaction.editReply({
-                content: 'User not found in this server.',
-                ephemeral: true,
-            });
-        }
-
-        const role = interaction.guild.roles.cache.get(roleOption.id);
-        if (!role) {
-            return interaction.editReply({
-                content: 'Role not found in this server.',
-                ephemeral: true,
-            });
-        }
-
-        // Prepare the embed
-        const embed = new EmbedBuilder()
-            .setFooter({
-                text: interaction.guild.name,
-                iconURL: interaction.guild.iconURL(),
-            })
-            .setTimestamp()
-            .setColor(role.color || 0x00ae86); // Default color if role color is not set
-
-        // Set the author with role icon if available
-        const roleIconURL = role.iconURL();
-        if (roleIconURL) {
-            embed.setAuthor({ name: `${role.name} ${capitalizeFirstLetter(commandName)}`, iconURL: roleIconURL });
-        } else {
-            embed.setAuthor({ name: `${role.name} ${capitalizeFirstLetter(commandName)}` });
-        }
-
-        // Construct the embed description based on the command
-        if (commandName === 'departure') {
-            embed.setDescription(`- ${user} is no longer a **<@&${role.id}>**`);
-            // Remove the role from the user
-            await user.roles.remove(role, 'Departure command executed');
-        } else if (commandName === 'return') {
-            embed.setDescription(
-                `- ${user} has returned to our staff team as a **<@&${role.id}>**!`
+            const announcementChannel = interaction.guild.channels.cache.get(
+                config.announcementChannelId
             );
-            // Add the role to the user
-            await user.roles.add(role, 'Return command executed');
-        } else if (commandName === 'promote') {
-            embed.setDescription(`- ${user} has been promoted to **<@&${role.id}>**!`);
-            // Add the new role to the user
-            await user.roles.add(role, 'Promote command executed');
-
-            // Optionally remove previous staff roles
-            const staffRoleIds = [
-                config.HelperRoleId,
-                config.ModRoleId,
-                config.AdminRoleId,
-                config.ManagerRoleId,
-                config.HeadDeveloperRoleId,
-                config.OwnerRoleId,
-                config.DeveloperRoleId,
-                config.DesignerRoleId,
-                config.ScreensharerRoleId,
-                config.TrialScreensharerRoleId,
-                config.ScreenshareManagerRoleId,
-            ];
-
-            // Remove all staff roles except the new role
-            for (const staffRoleId of staffRoleIds) {
-                if (staffRoleId !== role.id && user.roles.cache.has(staffRoleId)) {
-                    await user.roles.remove(
-                        staffRoleId,
-                        'Promote command executed - removed previous staff role'
-                    );
-                }
+            if (!announcementChannel) {
+                return interaction.editReply({
+                    content: 'Announcement channel not found.',
+                    ephemeral: true,
+                });
             }
+
+            const userOption = interaction.options.getUser('user');
+            const roleOption = interaction.options.getRole('role');
+
+            // Fetch the member object of the user
+            const user = await interaction.guild.members
+                .fetch(userOption.id)
+                .catch(() => null);
+            if (!user) {
+                return interaction.editReply({
+                    content: 'User not found in this server.',
+                    ephemeral: true,
+                });
+            }
+
+            const role = interaction.guild.roles.cache.get(roleOption.id);
+            if (!role) {
+                return interaction.editReply({
+                    content: 'Role not found in this server.',
+                    ephemeral: true,
+                });
+            }
+
+            // Prepare the embed
+            const embed = new EmbedBuilder()
+                .setFooter({
+                    text: interaction.guild.name,
+                    iconURL: interaction.guild.iconURL(),
+                })
+                .setTimestamp()
+                .setColor(role.color || 0x00ae86); // Default color if role color is not set
+
+            // Set the author with role icon if available
+            const roleIconURL = role.iconURL();
+            if (roleIconURL) {
+                embed.setAuthor({
+                    name: `${role.name} ${capitalizeFirstLetter(commandName)}`,
+                    iconURL: roleIconURL,
+                });
+            } else {
+                embed.setAuthor({
+                    name: `${role.name} ${capitalizeFirstLetter(commandName)}`,
+                });
+            }
+
+            // Construct the embed description based on the command
+            if (commandName === 'departure') {
+                embed.setDescription(`- ${user} is no longer a **<@&${role.id}>**`);
+                // Remove the role from the user
+            } else if (commandName === 'return') {
+                embed.setDescription(
+                    `- ${user} has returned to our staff team as a **<@&${role.id}>**!`
+                );
+                // Add the role to the user
+            } else if (commandName === 'promote') {
+                embed.setDescription(`- ${user} has been promoted to **<@&${role.id}>**!`);
+
+                
+
+            }
+
+            // Send the embed to the announcement channel
+            await announcementChannel.send({ embeds: [embed] });
+
+            // Confirm the action to the command executor
+            await interaction.editReply({
+                content: `${capitalizeFirstLetter(commandName)} announcement sent.`,
+                ephemeral: true,
+            });
         }
-
-        // Send the embed to the announcement channel
-        await announcementChannel.send({ embeds: [embed] });
-
-        // Confirm the action to the command executor
-        await interaction.editReply({
-            content: `${capitalizeFirstLetter(commandName)} announcement sent.`,
-            ephemeral: true,
-        });
-    }
+    } 
 });
 
 // Utility function to capitalize the first letter

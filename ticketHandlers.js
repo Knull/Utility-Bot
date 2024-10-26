@@ -599,7 +599,6 @@ async function handleInteraction(client, interaction) {
   
   
   
-  
   async function createTicketChannel(interaction, ticketType, data) {
     console.log(`createTicketChannel called for interaction ID: ${interaction.id} with ticketType: ${ticketType}`);
 

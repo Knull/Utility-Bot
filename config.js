@@ -44,5 +44,9 @@ module.exports = {
     AdminRoleId: '1228653981048377373',
     ModRoleId: '1228653981048377371',
     HelperRoleId: '1228653981048377366',
-    
+    ScreenshareManagerRoleId: '1228653981010497599',
+    ScreensharerRoleId: '1228653981010497598',
+    TrialScreensharerRoleId: '1228653981010497597',
+    announcementChannelId: '1299768976360079401',
+    ticketBlacklistRoleId: '1264857224338079755'
 };
