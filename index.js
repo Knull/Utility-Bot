@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Events, SlashCommandBuilder, PermissionsBitField, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle, InteractionType, Partials } = require('discord.js');
+const { Client, GatewayIntentBits, Events, SlashCommandBuilder, PermissionsBitField, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle, InteractionType, Partials, Collection  } = require('discord.js');
 const { REST } = require('@discordjs/rest');
 const { EventEmitter } = require('events');
 EventEmitter.defaultMaxListeners = 45;
@@ -38,6 +38,12 @@ const pool = mysql.createPool({
 const rest = new REST({ version: '10' }).setToken(config.token);
 
 const commands = [
+    {
+        name: 'lock',
+        description: 'Lock the current ticket channel to Manager+ roles.',
+        options: [], // No options needed
+    },
+    
     {
         name: 'translation_blacklist',
         description: 'Blacklist a user for a set duration',
@@ -274,6 +280,50 @@ const commands = [
             }
         ]
     },
+    {
+        name: 'add',
+        description: 'Add a user or role to a ticket',
+        options: [
+            {
+                name: 'mentionable',
+                description: 'The user or role to add to the ticket',
+                type: 9, // MENTIONABLE type
+                required: true,
+            },
+        ],
+    },
+    {
+        name: 'staff-list',
+        description: 'Displays a paginated list of staff members',
+        options: [
+            {
+                name: 'sort-by',
+                description: 'Sort staff list by hierarchy level',
+                type: 3, // STRING type
+                required: false,
+                choices: [
+                    { name: 'Owner', value: 'owner' },
+                    { name: 'Head Developer', value: 'head-developer' },
+                    { name: 'Manager', value: 'manager' },
+                    { name: 'Developer', value: 'developer' },
+                    { name: 'Designer', value: 'designer' },
+                    { name: 'Admin', value: 'admin' },
+                    { name: 'Mod', value: 'mod' },
+                    { name: 'Helper', value: 'helper' },
+                ],
+            },
+            {
+                name: 'order',
+                description: 'Order of the list',
+                type: 3, // STRING type
+                required: false,
+                choices: [
+                    { name: 'Ascending', value: 'ascending' },
+                    { name: 'Descending', value: 'descending' },
+                ],
+            },
+        ],
+    },
     
 ];
 
@@ -295,11 +345,9 @@ const commands = [
 client.once('ready', async () => {
     console.log('Bot is ready!');
     await setupTicketSystem(client);
-    client.application.commands.create(new SlashCommandBuilder()
-        .setName('add')
-        .setDescription('Add a user to a ticket')
-        .addUserOption(option => option.setName('user').setDescription('The user to add').setRequired(true))
-    );
+    
+    
+
 
     // Fetch the guild
     const guildId = '1228653980780072981'; // Replace with your server's ID
@@ -364,6 +412,262 @@ process.on("uncaughtException", sendErrorLog);
 
 // Catch unhandled promise rejections
 process.on("unhandledRejection", sendErrorLog);
+const staffRoles = [
+    config.OwnerRoleId,
+    config.HeadDeveloperRoleId,
+    config.ManagerRoleId,
+    config.DeveloperRoleId,
+    config.DesignerRoleId,
+    config.AdminRoleId,
+    config.ModRoleId,
+    config.HelperRoleId,
+];
+client.pagination = new Collection();
+
+// Handle interactions
+client.on('interactionCreate', async (interaction) => {
+    try {
+        if (interaction.isCommand()) {
+            const command = client.commands.get(interaction.commandName);
+
+            if (!command) return;
+
+            if (interaction.commandName === 'staff-list') {
+                await handleStaffListCommand(interaction); // Ensure this handler is defined
+            } 
+        } else if (interaction.isButton()) {
+            // Direct interactions based on customId prefix
+            if (interaction.customId.startsWith('stafflist_')) {
+                await handlePagination(interaction); // Ensure this handler is defined
+            }
+        }
+    } catch (error) {
+        console.error(`Error handling interaction: ${error.message}`);
+
+        // Optionally, inform the user about the error
+        if (interaction.isRepliable && interaction.isRepliable()) {
+            await interaction.reply({ content: 'There was an error while processing your interaction.', ephemeral: true });
+        }
+    }
+});
+
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isCommand()) return;
+
+    if (interaction.commandName === 'lock') {
+        // Lock command handler function
+        const lockCommandHandler = async () => {
+            // Ensure the command is used in a guild
+            if (!interaction.guild) {
+                return interaction.reply({ content: 'This command can only be used within a server.', ephemeral: true });
+            }
+
+            // Defer the reply to prevent the interaction from expiring
+            await interaction.deferReply({ ephemeral: true });
+
+            // Check if the user has one of the Manager+ roles
+            const member = interaction.member;
+            const hasPermission =
+                member.roles.cache.has(config.ManagerRoleId) ||
+                member.roles.cache.has(config.HeadDeveloperRoleId) ||
+                member.roles.cache.has(config.OwnerRoleId);
+
+            if (!hasPermission) {
+                return interaction.editReply({ content: 'You do not have permission to use this command.' });
+            }
+
+            const channel = interaction.channel;
+
+            // Check if the channel is a ticket channel by querying the database
+            try {
+                const [rows] = await client.pool.query('SELECT * FROM tickets WHERE channel_id = ?', [channel.id]);
+
+                if (rows.length === 0) {
+                    return interaction.editReply({ content: 'This command can only be used in ticket channels.' });
+                }
+
+                const ticket = rows[0];
+
+                // Determine if the ticket is closed
+                const isClosed = ticket.status === 'closed' || ticket.status === 'deleted';
+
+                // Fetch the ticket owner
+                const ticketOwnerId = ticket.user_id;
+                const ticketOwner = await interaction.guild.members.fetch(ticketOwnerId).catch(() => null);
+
+                // Define roles that should have access
+                const managerRoles = [
+                    config.ManagerRoleId,
+                    config.HeadDeveloperRoleId,
+                    config.OwnerRoleId,
+                ];
+
+                // Create permission overwrites
+                const permissionOverwrites = [
+                    {
+                        id: interaction.guild.roles.everyone.id, // Deny @everyone
+                        deny: [PermissionsBitField.Flags.ViewChannel],
+                    },
+                    // Allow Manager+ roles
+                    ...managerRoles.map(roleId => ({
+                        id: roleId,
+                        allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages],
+                    })),
+                ];
+
+                // If the ticket is not closed and the owner exists, allow the owner to view and send messages
+                if (!isClosed && ticketOwner) {
+                    permissionOverwrites.push({
+                        id: ticketOwnerId,
+                        allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages],
+                    });
+                }
+
+                // Update channel permissions
+                await channel.permissionOverwrites.set(permissionOverwrites, 'Channel locked by Manager');
+
+                // Create the embed with desired color and content
+                const embed = new EmbedBuilder()
+                    .setColor('#1E90FF') // Dodger Blue (neon light blue)
+                    .setTitle('🔒 Channel Locked')
+                    .setDescription(`This channel has been locked to Manager+ roles.${!isClosed && ticketOwner ? `\n<@${ticketOwnerId}> still has access.` : ''}`)
+                    .setFooter({ text: `Locked by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
+                    .setTimestamp();
+
+                // Provide feedback to the user via embed
+                return interaction.editReply({
+                    embeds: [embed],
+                    ephemeral: false, // Set to true if only the command executor should see the message
+                });
+            } catch (error) {
+                console.error(`Error in /lock command: ${error}`);
+                return interaction.editReply({ content: 'There was an error while trying to lock the channel.' });
+            }
+        };
+
+        // Execute the lock command handler
+        await lockCommandHandler();
+    }
+});
+
+// Handler for the 'staff-list' Command
+async function handleStaffListCommand(interaction) {
+    await interaction.deferReply(); // Defer reply to avoid interaction timeout
+
+    const sortBy = interaction.options.getString('sort-by');
+    const order = interaction.options.getString('order') || 'ascending';
+    const guild = interaction.guild;
+
+    await guild.members.fetch();
+
+    const allStaffRoles = [
+        { name: 'Owner', id: config.OwnerRoleId },
+        { name: 'Head Developer', id: config.HeadDeveloperRoleId },
+        { name: 'Manager', id: config.ManagerRoleId },
+        { name: 'Developer', id: config.DeveloperRoleId },
+        { name: 'Designer', id: config.DesignerRoleId },
+        { name: 'Admin', id: config.AdminRoleId },
+        { name: 'Mod', id: config.ModRoleId },
+        { name: 'Helper', id: config.HelperRoleId },
+        { name: 'Staff Base Role', id: config.staffRoleId },
+    ];
+
+    const selectedRole = allStaffRoles.find(role => role.name.toLowerCase() === sortBy?.toLowerCase());
+    const memberList = guild.members.cache.filter(member => {
+        if (selectedRole) return member.roles.cache.has(selectedRole.id);
+        return member.roles.cache.some(role => allStaffRoles.map(r => r.id).includes(role.id));
+    });
+
+    const sortedMembersArray = Array.from(memberList.values()).sort((a, b) => {
+        const roleIndexA = allStaffRoles.findIndex(role => a.roles.cache.has(role.id));
+        const roleIndexB = allStaffRoles.findIndex(role => b.roles.cache.has(role.id));
+        return order === 'ascending' ? roleIndexA - roleIndexB : roleIndexB - roleIndexA;
+    });
+
+    const pageSize = 10;
+    const totalPages = Math.ceil(sortedMembersArray.length / pageSize);
+    let currentPage = 1;
+    const embedTitleMode = selectedRole ? selectedRole.name : 'Staff';
+
+    const embed = getPageEmbed(currentPage, sortedMembersArray, guild, interaction, totalPages, embedTitleMode);
+    const buttons = getPaginationButtons(currentPage, totalPages);
+    const message = await interaction.editReply({ embeds: [embed], components: [buttons], fetchReply: true });
+
+    client.pagination.set(interaction.user.id, { 
+        messageId: message.id, 
+        currentPage, 
+        sortedMembersArray, 
+        totalPages, 
+        embedTitleMode 
+    });
+}
+
+// Pagination Handler
+async function handlePagination(interaction) {
+    // Ensure only the user who initiated the command can interact
+    const paginationState = client.pagination.get(interaction.user.id);
+
+    if (!paginationState || paginationState.messageId !== interaction.message.id) {
+        return interaction.reply({ content: `Only you can interact with these buttons.`, ephemeral: true });
+    }
+
+    let { currentPage, sortedMembersArray, totalPages, embedTitleMode } = paginationState;
+
+    // Determine the new page based on the button clicked
+    if (interaction.customId === 'stafflist_next') {
+        currentPage = Math.min(currentPage + 1, totalPages);
+    } else if (interaction.customId === 'stafflist_prev') {
+        currentPage = Math.max(currentPage - 1, 1);
+    }
+
+    // Update the pagination state
+    client.pagination.set(interaction.user.id, { 
+        ...paginationState, 
+        currentPage 
+    });
+
+    // Create the updated embed and buttons
+    const updatedEmbed = getPageEmbed(currentPage, sortedMembersArray, interaction.guild, interaction, totalPages, embedTitleMode);
+    const updatedButtons = getPaginationButtons(currentPage, totalPages);
+
+    // Use interaction.update() to update the message
+    await interaction.update({ embeds: [updatedEmbed], components: [updatedButtons] });
+}
+
+// Function to Create the Embed for a Given Page
+function getPageEmbed(page, sortedMembersArray, guild, interaction, totalPages, embedTitleMode) {
+    const pageSize = 10;
+    const pageStartIndex = (page - 1) * pageSize;
+    const pageMembers = sortedMembersArray.slice(pageStartIndex, pageStartIndex + pageSize);
+
+    const embed = new EmbedBuilder()
+        .setAuthor({ name: `Staff List`, iconURL: guild.iconURL() })
+        .setTitle(`Mode: ${embedTitleMode} [${page}/${totalPages}]`)
+        .setDescription(`▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n${pageMembers.map((member, i) => `\`${pageStartIndex + i + 1}.\` <@${member.id}>`).join('\n')}\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬`)
+        .setFooter({ 
+            text: `${sortedMembersArray.findIndex(m => m.user.id === interaction.user.id) + 1}. ${interaction.user.tag}`, 
+            iconURL: interaction.user.displayAvatarURL() 
+        });
+
+    return embed;
+}
+
+// Function to Create Pagination Buttons
+function getPaginationButtons(page, totalPages) {
+    const prevButton = new ButtonBuilder()
+        .setCustomId('stafflist_prev')
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji('◀️')
+        .setDisabled(page === 1);
+
+    const nextButton = new ButtonBuilder()
+        .setCustomId('stafflist_next')
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji('▶️')
+        .setDisabled(page === totalPages);
+
+    return new ActionRowBuilder().addComponents(prevButton, nextButton);
+}
 
 // voting
 // pups voting
@@ -553,7 +857,7 @@ client.on('interactionCreate', async interaction => {
 
         if (!interaction.member.roles.cache.has(managerRole.id) && !interaction.member.roles.cache.has(config.premiumManagerRoleId) && !interaction.member.roles.cache.has(config.pugsManagerRoleId)) {
             const embed = new EmbedBuilder()
-                .setDescription(`Only people with these roles can use this button:\n -<@&${config.premiumManagerRoleId}>\n- <@&${config.pugsManagerRoleId}>\n- <@&${config.pupsManagerRoleId}`)
+                .setDescription(`Only people with these roles can use this button:\n - <@&${config.premiumManagerRoleId}>\n- <@&${config.pugsManagerRoleId}>\n- <@&${config.pupsManagerRoleId}>`)
                 .setColor(0x980e00);
             return interaction.reply({ embeds: [embed], ephemeral: true });
         }
@@ -634,8 +938,8 @@ client.on('interactionCreate', async interaction => {
 
         if (!interaction.member.roles.cache.has(managerRole.id) && !interaction.member.roles.cache.has(config.premiumManagerRoleId) && !interaction.member.roles.cache.has(config.pugsManagerRoleId)) {
             const embed = new EmbedBuilder()
-                .setDescription(`Only people with these roles can use this button:\n -<@&${config.premiumManagerRoleId}>\n- <@&${config.pugsManagerRoleId}>\n- <@&${config.pupsManagerRoleId}`)
-                .setColor(0x980e00);
+            .setDescription(`Only people with these roles can use this button:\n - <@&${config.premiumManagerRoleId}>\n- <@&${config.pugsManagerRoleId}>\n- <@&${config.pupsManagerRoleId}>`)
+            .setColor(0x980e00);
             return interaction.reply({ embeds: [embed], ephemeral: true });
         }
 

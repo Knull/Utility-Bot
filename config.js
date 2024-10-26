@@ -35,6 +35,14 @@ module.exports = {
     // Log channel IDs
     ticketLogsChannelId1: '1228653985876021294', // For General, Appeal, Report tickets
     ticketLogsChannelId2: '1299390184785182770', // For Staff Report, Partnership tickets
-
+    // staff role ids
+    OwnerRoleId: '1228653981115355196',
+    HeadDeveloperRoleId: '1228653981086257184',
+    ManagerRoleId: '1228653981086257188',
+    DeveloperRoleId: '1228653981086257183',
+    DesignerRoleId: '1246850552357191811',
+    AdminRoleId: '1228653981048377373',
+    ModRoleId: '1228653981048377371',
+    HelperRoleId: '1228653981048377366',
     
 };

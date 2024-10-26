@@ -407,22 +407,33 @@ async function handleInteraction(client, interaction) {
       const reason = fields.getTextInputValue('reason');
       const proof = fields.getTextInputValue('proof');
   
-      // Split and filter proof URLs
-      const proofUrls = proof.split(/\s+/).filter((url) => url.startsWith('http'));
-  
+      // Split and filter valid URLs in proof input
+      const proofUrls = proof
+      .split(/\s+/)
+      .filter((url) => /^https?:\/\/[^\s/$.?#].[^\s]*$/i.test(url)); // Checks for valid URL format
+
+      if (proofUrls.length === 0) {
+      await interaction.reply({
+          content: 'Please provide at least one valid URL as proof.',
+          ephemeral: true,
+      });
+      return;
+      }
+
       // Validate all proof URLs concurrently
       const validationPromises = proofUrls.map((url) => isValidMediaUrl(url));
       const validationResults = await Promise.all(validationPromises);
-  
+
       // Check if all URLs are valid
       const allValid = validationResults.every((result) => result === true);
       if (!allValid) {
-        await interaction.reply({
+      await interaction.reply({
           content: 'One or more proof URLs are invalid or unsupported. Please ensure all provided URLs point to valid media files.',
           ephemeral: true,
-        });
-        return;
+      });
+      return;
       }
+
   
       // Proceed to find the reported member
       const guild = interaction.guild;
@@ -1579,34 +1590,44 @@ async function promptReason(client, interaction, action) {
 
 async function handleAddCommand(interaction) {
   const staffRoleId = config.staffRoleId;
-  const user = interaction.options.getUser('user', true);
+  const mentionable = interaction.options.getMentionable('mentionable');
   const channel = interaction.channel;
 
   // Check if the user issuing the command has the staff role
   if (!interaction.member.roles.cache.has(staffRoleId)) {
-      return interaction.reply({ 
-          content: `Only <@&${staffRoleId}> can use this command.`, 
-          ephemeral: true 
+      return interaction.reply({
+          content: `Only <@&${staffRoleId}> can use this command.`,
+          ephemeral: true,
       });
   }
 
-  // Fetch the member to be added to the channel
-  const member = await interaction.guild.members.fetch(user.id);
+  // Check if the mentionable is a user or a role
+  if (!mentionable) {
+      return interaction.reply({
+          content: 'Please specify a valid user or role to add to the ticket.',
+          ephemeral: true,
+      });
+  }
 
-  // Update the channel permissions to grant the user access
-  await channel.permissionOverwrites.create(member, {
+  // Set permissions for the mentionable (user or role) to view and send messages in the channel
+  await channel.permissionOverwrites.create(mentionable, {
       ViewChannel: true,
-      SendMessages: true
+      SendMessages: true,
   });
 
   // Create an embed message
   const embed = new EmbedBuilder()
       .setColor(0x2e96e6) // Blue color
-      .setDescription(`> Granted <@${user.id}> access to <#${channel.id}>.`);
+      .setDescription(
+          mentionable.user
+              ? `> Granted <@${mentionable.id}> access to <#${channel.id}>.` // Mention the user
+              : `> Granted <@&${mentionable.id}> access to <#${channel.id}>.` // Mention the role
+      );
 
   // Reply with the embed message
   await interaction.reply({ embeds: [embed] });
 }
+
 
 module.exports = { 
   setupTicketSystem, 
