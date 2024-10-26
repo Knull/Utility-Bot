@@ -1373,7 +1373,7 @@ client.on('interactionCreate', async interaction => {
             return;
         }
 
-        const action = parts[0];
+        const action = parts[0]; // Expecting 'prev' or 'next'
         const userId = parts[3];
         let currentPage = parseInt(parts[4]);
 
@@ -1413,12 +1413,12 @@ client.on('interactionCreate', async interaction => {
         const buttons = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId(`prev_list_${userId}_${currentPage}`)
+                    .setCustomId(`prev_list_pups_${userId}_${currentPage}`)
                     .setEmoji('⬅️')
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(currentPage === 0),
                 new ButtonBuilder()
-                    .setCustomId(`next_list_${userId}_${currentPage}`)
+                    .setCustomId(`next_list_pups_${userId}_${currentPage}`)
                     .setEmoji('➡️')
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(currentPage === totalPages - 1)
@@ -1427,7 +1427,6 @@ client.on('interactionCreate', async interaction => {
         await interaction.update({ embeds: [listEmbed], components: [buttons], ephemeral: false });
     }
 });
-
 // pugs voting
 client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand() || interaction.commandName !== 'pugs') return;

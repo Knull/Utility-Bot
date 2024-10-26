@@ -508,31 +508,86 @@ async function handleInteraction(client, interaction) {
   
   
   function getPermissionOverwrites(guild, userId, ticketType) {
+    console.log(`--- Begin Permission Setup ---`);
+    console.log(`Ticket Type: ${ticketType}`);
+    console.log(`Guild ID: ${guild.id}, User ID: ${userId}`);
+    
+    // Ensure all IDs are strings
     const overwrites = [
       {
-        id: guild.roles.everyone.id,
+        id: String(guild.roles.everyone.id),
         deny: [PermissionFlagsBits.ViewChannel],
       },
       {
-        id: userId,
+        id: String(userId),
         allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
       },
     ];
   
-    if (['General', 'Appeal', 'Report'].includes(ticketType)) {
+    // Function to safely map permissions
+    const safeMapPermissions = (permissions) => permissions.map(p => p.toString());
+  
+    // Create a version of overwrites suitable for logging (convert BigInt to strings)
+    const logOverwrites = overwrites.map(ow => ({
+      id: ow.id,
+      allow: ow.allow ? safeMapPermissions(ow.allow) : [],
+      deny: ow.deny ? safeMapPermissions(ow.deny) : [],
+    }));
+    
+    console.log('Base overwrites setup:', JSON.stringify(logOverwrites, null, 2));
+  
+    if (['General', 'Report'].includes(ticketType)) {
+      console.log(`Adding permissions for Staff in General/Report ticket`);
       overwrites.push({
-        id: config.staffRoleId,
+        id: String(config.staffRoleId),
         allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
       });
     } else if (['Staff Report', 'Partnership'].includes(ticketType)) {
+      console.log(`Adding permissions for Admin in Staff Report/Partnership ticket`);
       overwrites.push({
-        id: config.adminRoleId, // Ensure this is set in config.js
+        id: String(config.adminRoleId),
         allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
       });
+    } else if (ticketType === 'Appeal') {
+      console.log(`Setting permissions for Appeal ticket (Admin only)`);
+      overwrites.push(
+        {
+          id: String(config.staffRoleId),
+          deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+        },
+        {
+          id: String(config.adminRoleId),
+          allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+        }
+      );
     }
+  
+    // Create a final version of overwrites suitable for logging
+    const finalLogOverwrites = overwrites.map(ow => ({
+      id: ow.id,
+      allow: ow.allow ? safeMapPermissions(ow.allow) : [],
+      deny: ow.deny ? safeMapPermissions(ow.deny) : [],
+    }));
+    
+    console.log(`Final overwrites for ticket type "${ticketType}":`, JSON.stringify(finalLogOverwrites, null, 2));
+    console.log(`--- End Permission Setup ---`);
   
     return overwrites;
   }
+  
+  
+  
+  function safeStringify(obj, indent = 2) {
+    return JSON.stringify(obj, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    , indent);
+  }
+  
+  
+  
+  
+  
+  
   
   async function createTicketChannel(interaction, ticketType, data) {
     console.log(`createTicketChannel called for interaction ID: ${interaction.id} with ticketType: ${ticketType}`);
@@ -806,59 +861,47 @@ async function handleInteraction(client, interaction) {
   
 
 async function handleTicketCreation(interaction, type) {
-    const { guild, user } = interaction;
+  const { guild, user } = interaction;
 
-    try {
-        // Fetch the current ticket counter from the database
-        const [settingsRows] = await pool.execute('SELECT * FROM ticket_settings WHERE id = 1');
-        let ticketCounter = settingsRows[0].ticket_counter;
-        const prefix = '┃'; // Fixed prefix
+  try {
+      // Fetch the current ticket counter from the database
+      const [settingsRows] = await pool.execute('SELECT * FROM ticket_settings WHERE id = 1');
+      let ticketCounter = settingsRows[0].ticket_counter;
+      const prefix = '┃'; // Fixed prefix
 
-        // Mapping customId to ticket type
-        const ticketTypeMap = {
-            'create_general': 'General',
-            'create_appeal': 'Appeal',
-            'create_report': 'Report',
-            'create_staff_report': 'Staff Report',
-            'create_partnership': 'Partnership',
-        };
+      // Mapping customId to ticket type
+      const ticketTypeMap = {
+          'create_general': 'General',
+          'create_appeal': 'Appeal',
+          'create_report': 'Report',
+          'create_staff_report': 'Staff Report',
+          'create_partnership': 'Partnership',
+      };
 
-        const ticketType = ticketTypeMap[type] || 'Ticket';
+      const ticketType = ticketTypeMap[type] || 'Ticket';
 
-        // Process the username to remove special characters or spaces
-        let username = user.username.split(/[\s\W_]+/)[0]; // Split username at non-alphanumeric characters
-        username = username || user.username; // If username is empty after split, use the full username
+      // Process the username to remove special characters or spaces
+      let username = user.username.split(/[\s\W_]+/)[0]; // Split username at non-alphanumeric characters
+      username = username || user.username; // If username is empty after split, use the full username
 
-        const ticketChannelName = `${ticketCounter}${prefix}${username}`;
+      const ticketChannelName = `${ticketCounter}${prefix}${username}`;
 
-        const permissionOverwrites = [
-            {
-                id: guild.roles.everyone.id,
-                deny: [PermissionFlagsBits.ViewChannel],
-            },
-            {
-                id: user.id,
-                allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
-            },
-            {
-                id: config.staffRoleId,
-                allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
-            },
-        ];
-        const parentCategoryId = getCategoryId(ticketType);
+      // **Use getPermissionOverwrites instead of hardcoding**
+      const permissionOverwrites = getPermissionOverwrites(guild, user.id, ticketType);
+      const parentCategoryId = getCategoryId(ticketType);
 
-        // Create the ticket channel and get the channel object directly
-        const ticketChannel = await guild.channels.create({
-            name: ticketChannelName,
-            type: ChannelType.GuildText,
-            parent: parentCategoryId,
-            permissionOverwrites,
-            topic: `[${ticketType}] Ticket for ${user.username}`,
-          });
+      // Create the ticket channel with the correct permissions
+      const ticketChannel = await guild.channels.create({
+          name: ticketChannelName,
+          type: ChannelType.GuildText,
+          parent: parentCategoryId,
+          permissionOverwrites,
+          topic: `[${ticketType}] Ticket for ${user.username}`,
+        });
 
-        if (!ticketChannel) {
-            throw new Error('Failed to create the ticket channel.');
-        }
+      if (!ticketChannel) {
+          throw new Error('Failed to create the ticket channel.');
+      }
 
         // The rest of your code remains the same
         const ticketInfoEmbed = new EmbedBuilder()
