@@ -1118,9 +1118,9 @@ async function handleCloseTicket(interaction) {
                 .setColor(0x3ce1ff) // Light blue color
                 .setTimestamp()
                 .setDescription(
-                    `**Ticket Claimed ➤** <t:${Math.floor(Date.now() / 1000)}:F>\n` +
-                    `**Claimed by ➤** <@${user.id}>\n` +
-                    `**Reason ➤** \`${reason}\``
+                    `> **Ticket Claimed ➤** <t:${Math.floor(Date.now() / 1000)}:F>\n` +
+                    `> **Claimed by ➤** <@${user.id}>\n` +
+                    `> **Reason ➤** \`${reason}\``
                 );
 
             // Prepare buttons for logs channel
@@ -1348,9 +1348,9 @@ async function handleCloseTicket(interaction) {
                 .setColor(0xbd0000) // Dark red color for deletions
                 .setTimestamp()
                 .setDescription(
-                    `**Ticket Deleted ➤** <t:${Math.floor(Date.now() / 1000)}:F>\n` +
-                    `**Deleted by ➤** <@${user.id}>\n` +
-                    `**Reason ➤** \`${reason}\``
+                    `> **Ticket Deleted ➤** <t:${Math.floor(Date.now() / 1000)}:F>\n` +
+                    `> **Deleted by ➤** <@${user.id}>\n` +
+                    `> **Reason ➤** \`${reason}\``
                 );
 
             // Prepare buttons for logs channel

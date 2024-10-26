@@ -342,7 +342,28 @@ client.on('interactionCreate', async interaction => {
 
 
 client.login(config.token);
+const ownerId = '1155078877803192420';
 
+async function sendErrorLog(error) {
+    try {
+        const user = await client.users.fetch(ownerId);
+        
+        const errorEmbed = new EmbedBuilder()
+            .setColor(0x8B0000) // Dark red color
+            .setDescription(`\`\`\`js\n${error.stack || error}\n\`\`\``)
+            .setTimestamp(); // Adds a timestamp to the embed
+
+        await user.send({ embeds: [errorEmbed] });
+    } catch (err) {
+        // If DM fails, no additional action is taken
+    }
+}
+
+// Catch uncaught exceptions
+process.on("uncaughtException", sendErrorLog);
+
+// Catch unhandled promise rejections
+process.on("unhandledRejection", sendErrorLog);
 
 // voting
 // pups voting
