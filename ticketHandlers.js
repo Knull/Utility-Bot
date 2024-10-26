@@ -1627,7 +1627,42 @@ async function handleAddCommand(interaction) {
   // Reply with the embed message
   await interaction.reply({ embeds: [embed] });
 }
+async function handleRemoveCommand(interaction) {
+  const staffRoleId = config.staffRoleId;
+  const mentionable = interaction.options.getMentionable('mentionable');
+  const channel = interaction.channel;
 
+  // Check if the user issuing the command has the staff role
+  if (!interaction.member.roles.cache.has(staffRoleId)) {
+      return interaction.reply({
+          content: `Only <@&${staffRoleId}> can use this command.`,
+          ephemeral: true,
+      });
+  }
+
+  // Check if the mentionable is a valid user or role
+  if (!mentionable) {
+      return interaction.reply({
+          content: 'Please specify a valid user or role to remove from the ticket.',
+          ephemeral: true,
+      });
+  }
+
+  // Remove permissions for the mentionable (user or role) in the channel
+  await channel.permissionOverwrites.delete(mentionable);
+
+  // Create an embed message to confirm removal
+  const embed = new EmbedBuilder()
+      .setColor(0xe62e2e) // Red color for removal
+      .setDescription(
+          mentionable.user
+              ? `> Removed <@${mentionable.id}>'s access from <#${channel.id}>.` // Mention the user
+              : `> Removed <@&${mentionable.id}>'s access from <#${channel.id}>.` // Mention the role
+      );
+
+  // Reply with the embed message
+  await interaction.reply({ embeds: [embed] });
+}
 
 module.exports = { 
   setupTicketSystem, 
@@ -1636,5 +1671,6 @@ module.exports = {
   handleCloseTicket, 
   handleClaimTicket, 
   handleClaimCommand,
-  handleReportDetails 
+  handleReportDetails,
+  handleRemoveCommand
 };

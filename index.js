@@ -1,10 +1,10 @@
-const { Client, GatewayIntentBits, Events, SlashCommandBuilder, PermissionsBitField, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle, InteractionType, Partials, Collection  } = require('discord.js');
+const { Client, GatewayIntentBits, Events, SlashCommandBuilder, PermissionsBitField, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle, InteractionType, Partials, Collection  } = require('discord.js');
 const { REST } = require('@discordjs/rest');
 const { EventEmitter } = require('events');
 EventEmitter.defaultMaxListeners = 45;
 const { Routes } = require('discord-api-types/v10');
 const config = require('./config');
-const { setupTicketSystem, handleInteraction, handleAddCommand, handleCloseTicket, handleClaimTicket, handleClaimCommand } = require('./ticketHandlers.js');
+const { setupTicketSystem, handleInteraction, handleAddCommand, handleCloseTicket, handleClaimTicket, handleClaimCommand, handleRemoveCommand } = require('./ticketHandlers.js');
 const { JSDOM } = require('jsdom');
 const axios = require('axios');
 
@@ -13,12 +13,12 @@ const pool = mysql.createPool({
     host: '216.225.202.122',
     user: 'user_phpmyadmin',
     password: 'SepHup9ePRap@lch2tRO',
-    database: 'ARBW',
+    database: 'PRBW',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
   });
-  
+
   const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -36,14 +36,73 @@ const pool = mysql.createPool({
 });
 
 const rest = new REST({ version: '10' }).setToken(config.token);
+client.pool = pool;
 
 const commands = [
+    {
+        name: 'departure',
+        description: 'Announce the departure of a staff member.',
+        options: [
+            {
+                name: 'user',
+                description: 'User who is departing.',
+                type: 6, // USER type
+                required: true,
+            },
+            {
+                name: 'role',
+                description: 'Role the user is departing from.',
+                type: 8, // ROLE type
+                required: true,
+            },
+        ],
+    },
+    {
+        name: 'return',
+        description: 'Announce the return of a staff member.',
+        options: [
+            {
+                name: 'user',
+                description: 'User who is returning.',
+                type: 6, // USER type
+                required: true,
+            },
+            {
+                name: 'role',
+                description: 'Role the user is returning to.',
+                type: 8, // ROLE type
+                required: true,
+            },
+        ],
+    },
+    {
+        name: 'promote',
+        description: 'Announce the promotion of a staff member.',
+        options: [
+            {
+                name: 'user',
+                description: 'User who is being promoted.',
+                type: 6, // USER type
+                required: true,
+            },
+            {
+                name: 'role',
+                description: 'Role the user is being promoted to.',
+                type: 8, // ROLE type
+                required: true,
+            },
+        ],
+    },
     {
         name: 'lock',
         description: 'Lock the current ticket channel to Manager+ roles.',
         options: [], // No options needed
     },
-    
+    {
+        name: 'unlock',
+        description: 'Unlock the current ticket channel and restore original permissions.',
+        options: [], // No options needed
+    },
     {
         name: 'translation_blacklist',
         description: 'Blacklist a user for a set duration',
@@ -81,7 +140,7 @@ const commands = [
         ],
     },
     {
-        name: 'promote',
+        name: 'upgrade',
         description: 'Promote a user to a specific tier',
         options: [
             {
@@ -101,38 +160,44 @@ const commands = [
     },
     
    
-{
-    name: 'premium',
-    description: 'Manage Premium roles',
-    options: [
-        {
-            name: 'add',
-            description: 'Add Premium role to a user',
-            type: 1, // Subcommand
-            options: [
-                {
-                    name: 'user',
-                    description: 'User to add Premium role to',
-                    type: 6, // USER type
-                    required: true
-                }
-            ]
-        },
-        {
-            name: 'remove',
-            description: 'Remove Premium role from a user',
-            type: 1, // Subcommand
-            options: [
-                {
-                    name: 'user',
-                    description: 'User to remove Premium role from',
-                    type: 6, // USER type
-                    required: true
-                }
-            ]
-        }
-    ]
-},
+    {
+        name: 'premium',
+        description: 'Manage Premium roles',
+        options: [
+            {
+                name: 'add',
+                description: 'Add Premium role to a user',
+                type: 1, // Subcommand
+                options: [
+                    {
+                        name: 'user',
+                        description: 'User to add Premium role to',
+                        type: 6, // USER type
+                        required: true,
+                    },
+                ],
+            },
+            {
+                name: 'remove',
+                description: 'Remove Premium role from a user',
+                type: 1, // Subcommand
+                options: [
+                    {
+                        name: 'user',
+                        description: 'User to remove Premium role from',
+                        type: 6, // USER type
+                        required: true,
+                    },
+                ],
+            },
+            {
+                name: 'list',
+                description: 'List all users with the Premium role',
+                type: 1, // Subcommand
+                options: [], // No additional options
+            },
+        ],
+    },
     {
         name: 'close',
         description: 'Close a ticket',
@@ -293,6 +358,19 @@ const commands = [
         ],
     },
     {
+        name: 'remove',
+        description: 'Remove a user or role from a ticket',
+        options: [
+            {
+                name: 'mentionable',
+                description: 'The user or role to remove from the ticket',
+                type: 9, // MENTIONABLE type
+                required: true,
+            },
+        ],
+    },
+    
+    {
         name: 'staff-list',
         description: 'Displays a paginated list of staff members',
         options: [
@@ -372,6 +450,8 @@ client.on('interactionCreate', async interaction => {
 
             if (commandName === 'add') {
                 await handleAddCommand(interaction);
+            } else if (commandName === 'remove') {
+                await handleRemoveCommand(interaction);
             } else if (commandName === 'close') {
                 await handleCloseTicket(interaction);
             } else if (commandName === 'claim') {
@@ -386,6 +466,7 @@ client.on('interactionCreate', async interaction => {
         console.error('Error handling interaction:', error);
     }
 });
+
 
 
 
@@ -406,7 +487,147 @@ async function sendErrorLog(error) {
         // If DM fails, no additional action is taken
     }
 }
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isCommand()) return;
 
+    // Ensure the command is used in a guild
+    if (!interaction.guild) {
+        return interaction.reply({
+            content: 'This command can only be used within a server.',
+            ephemeral: true,
+        });
+    }
+
+    // Define roles that can use the command (Admin+)
+    const allowedRoleIds = [
+        config.AdminRoleId,
+        config.ManagerRoleId,
+        config.HeadDeveloperRoleId,
+        config.OwnerRoleId,
+    ];
+
+    // Check if the user has one of the allowed roles
+    const member = interaction.member;
+    const hasPermission = member.roles.cache.some((role) =>
+        allowedRoleIds.includes(role.id)
+    );
+
+    if (!hasPermission) {
+        return interaction.reply({
+            content: 'You do not have permission to use this command.',
+            ephemeral: true,
+        });
+    }
+
+    const commandName = interaction.commandName;
+
+    if (['departure', 'return', 'promote'].includes(commandName)) {
+        await interaction.deferReply({ ephemeral: true });
+
+        const announcementChannel = interaction.guild.channels.cache.get(
+            config.announcementChannelId
+        );
+        if (!announcementChannel) {
+            return interaction.editReply({
+                content: 'Announcement channel not found.',
+                ephemeral: true,
+            });
+        }
+
+        const userOption = interaction.options.getUser('user');
+        const roleOption = interaction.options.getRole('role');
+
+        // Fetch the member object of the user
+        const user = await interaction.guild.members.fetch(userOption.id).catch(() => null);
+        if (!user) {
+            return interaction.editReply({
+                content: 'User not found in this server.',
+                ephemeral: true,
+            });
+        }
+
+        const role = interaction.guild.roles.cache.get(roleOption.id);
+        if (!role) {
+            return interaction.editReply({
+                content: 'Role not found in this server.',
+                ephemeral: true,
+            });
+        }
+
+        // Prepare the embed
+        const embed = new EmbedBuilder()
+            .setFooter({
+                text: interaction.guild.name,
+                iconURL: interaction.guild.iconURL(),
+            })
+            .setTimestamp()
+            .setColor(role.color || 0x00ae86); // Default color if role color is not set
+
+        // Set the author with role icon if available
+        const roleIconURL = role.iconURL();
+        if (roleIconURL) {
+            embed.setAuthor({ name: `${role.name} ${capitalizeFirstLetter(commandName)}`, iconURL: roleIconURL });
+        } else {
+            embed.setAuthor({ name: `${role.name} ${capitalizeFirstLetter(commandName)}` });
+        }
+
+        // Construct the embed description based on the command
+        if (commandName === 'departure') {
+            embed.setDescription(`- ${user} is no longer a **<@&${role.id}>**`);
+            // Remove the role from the user
+            await user.roles.remove(role, 'Departure command executed');
+        } else if (commandName === 'return') {
+            embed.setDescription(
+                `- ${user} has returned to our staff team as a **<@&${role.id}>**!`
+            );
+            // Add the role to the user
+            await user.roles.add(role, 'Return command executed');
+        } else if (commandName === 'promote') {
+            embed.setDescription(`- ${user} has been promoted to **<@&${role.id}>**!`);
+            // Add the new role to the user
+            await user.roles.add(role, 'Promote command executed');
+
+            // Optionally remove previous staff roles
+            const staffRoleIds = [
+                config.HelperRoleId,
+                config.ModRoleId,
+                config.AdminRoleId,
+                config.ManagerRoleId,
+                config.HeadDeveloperRoleId,
+                config.OwnerRoleId,
+                config.DeveloperRoleId,
+                config.DesignerRoleId,
+                config.ScreensharerRoleId,
+                config.TrialScreensharerRoleId,
+                config.ScreenshareManagerRoleId,
+            ];
+
+            // Remove all staff roles except the new role
+            for (const staffRoleId of staffRoleIds) {
+                if (staffRoleId !== role.id && user.roles.cache.has(staffRoleId)) {
+                    await user.roles.remove(
+                        staffRoleId,
+                        'Promote command executed - removed previous staff role'
+                    );
+                }
+            }
+        }
+
+        // Send the embed to the announcement channel
+        await announcementChannel.send({ embeds: [embed] });
+
+        // Confirm the action to the command executor
+        await interaction.editReply({
+            content: `${capitalizeFirstLetter(commandName)} announcement sent.`,
+            ephemeral: true,
+        });
+    }
+});
+
+// Utility function to capitalize the first letter
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
 // Catch uncaught exceptions
 process.on("uncaughtException", sendErrorLog);
 
@@ -424,132 +645,331 @@ const staffRoles = [
 ];
 client.pagination = new Collection();
 
-// Handle interactions
 client.on('interactionCreate', async (interaction) => {
     try {
         if (interaction.isCommand()) {
-            const command = client.commands.get(interaction.commandName);
-
-            if (!command) return;
-
             if (interaction.commandName === 'staff-list') {
-                await handleStaffListCommand(interaction); // Ensure this handler is defined
-            } 
+                await handleStaffListCommand(interaction);
+            } else {
+                // Handle other commands
+            }
         } else if (interaction.isButton()) {
-            // Direct interactions based on customId prefix
             if (interaction.customId.startsWith('stafflist_')) {
-                await handlePagination(interaction); // Ensure this handler is defined
+                await handlePagination(interaction);
+            } else {
+                // Handle other button interactions
             }
         }
     } catch (error) {
         console.error(`Error handling interaction: ${error.message}`);
 
-        // Optionally, inform the user about the error
-        if (interaction.isRepliable && interaction.isRepliable()) {
-            await interaction.reply({ content: 'There was an error while processing your interaction.', ephemeral: true });
+        // Respond to the interaction if possible
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({
+                content: 'An error occurred while processing your interaction.',
+                ephemeral: true,
+            });
+        } else if (interaction.isRepliable()) {
+            await interaction.reply({
+                content: 'An error occurred while processing your interaction.',
+                ephemeral: true,
+            });
         }
     }
 });
 
+
 client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isCommand()) return;
+    try {
+        if (interaction.isCommand()) {
 
-    if (interaction.commandName === 'lock') {
-        // Lock command handler function
-        const lockCommandHandler = async () => {
-            // Ensure the command is used in a guild
-            if (!interaction.guild) {
-                return interaction.reply({ content: 'This command can only be used within a server.', ephemeral: true });
-            }
+            if (interaction.commandName === 'lock') {
+                // Existing lock command handler
+                const lockCommandHandler = async () => {
+                    // Ensure the command is used in a guild
+                    if (!interaction.guild) {
+                        return interaction.reply({ content: 'This command can only be used within a server.', ephemeral: true });
+                    }
 
-            // Defer the reply to prevent the interaction from expiring
-            await interaction.deferReply({ ephemeral: true });
+                    // Defer the reply to prevent the interaction from expiring
+                    await interaction.deferReply({ ephemeral: false });
 
-            // Check if the user has one of the Manager+ roles
-            const member = interaction.member;
-            const hasPermission =
-                member.roles.cache.has(config.ManagerRoleId) ||
-                member.roles.cache.has(config.HeadDeveloperRoleId) ||
-                member.roles.cache.has(config.OwnerRoleId);
+                    // Define roles that can use the command
+                    const allowedRoleIds = [
+                        config.ManagerRoleId,
+                        config.HeadDeveloperRoleId,
+                        config.OwnerRoleId,
+                    ];
 
-            if (!hasPermission) {
-                return interaction.editReply({ content: 'You do not have permission to use this command.' });
-            }
+                    // Check if the user has one of the allowed roles
+                    const member = interaction.member;
+                    const hasPermission = member.roles.cache.some(role => allowedRoleIds.includes(role.id));
 
-            const channel = interaction.channel;
+                    if (!hasPermission) {
+                        // Fetch role mentions
+                        const roleMentions = allowedRoleIds.map(roleId => `<@&${roleId}>`).join('\n');
 
-            // Check if the channel is a ticket channel by querying the database
-            try {
-                const [rows] = await client.pool.query('SELECT * FROM tickets WHERE channel_id = ?', [channel.id]);
+                        // Create an embed to inform the user
+                        const embed = new EmbedBuilder()
+                            .setColor('#FF0000') // Red color for error
+                            .setTitle('Insufficient Permissions')
+                            .setDescription(`Only members with the following roles can use this command:\n${roleMentions}`)
+                            .setFooter({ text: `Requested by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
+                            .setTimestamp();
 
-                if (rows.length === 0) {
-                    return interaction.editReply({ content: 'This command can only be used in ticket channels.' });
-                }
+                        return interaction.editReply({ embeds: [embed], ephemeral: true });
+                    }
 
-                const ticket = rows[0];
+                    const channel = interaction.channel;
 
-                // Determine if the ticket is closed
-                const isClosed = ticket.status === 'closed' || ticket.status === 'deleted';
+                    // Check if the channel is a ticket channel by querying the database
+                    try {
+                        console.log(`Channel ID from bot: ${channel.id} (Length: ${channel.id.length})`);
+                        const [rows] = await client.pool.query('SELECT * FROM tickets WHERE channel_id = ?', [channel.id]);
+                        console.log(`Number of rows returned: ${rows.length}`);
+                        console.log('Rows:', rows);
 
-                // Fetch the ticket owner
-                const ticketOwnerId = ticket.user_id;
-                const ticketOwner = await interaction.guild.members.fetch(ticketOwnerId).catch(() => null);
+                        if (rows.length === 0) {
+                            return interaction.editReply({ content: 'This command can only be used in ticket channels.' });
+                        }
 
-                // Define roles that should have access
-                const managerRoles = [
-                    config.ManagerRoleId,
-                    config.HeadDeveloperRoleId,
-                    config.OwnerRoleId,
-                ];
+                        const ticket = rows[0];
 
-                // Create permission overwrites
-                const permissionOverwrites = [
-                    {
-                        id: interaction.guild.roles.everyone.id, // Deny @everyone
-                        deny: [PermissionsBitField.Flags.ViewChannel],
-                    },
-                    // Allow Manager+ roles
-                    ...managerRoles.map(roleId => ({
-                        id: roleId,
-                        allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages],
-                    })),
-                ];
+                        // Determine if the ticket is closed
+                        const isClosed = ticket.status === 'closed' || ticket.status === 'deleted';
 
-                // If the ticket is not closed and the owner exists, allow the owner to view and send messages
-                if (!isClosed && ticketOwner) {
-                    permissionOverwrites.push({
-                        id: ticketOwnerId,
-                        allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages],
-                    });
-                }
+                        // Fetch the ticket owner
+                        const ticketOwnerId = ticket.user_id;
+                        const ticketOwner = await interaction.guild.members.fetch(ticketOwnerId).catch(() => null);
 
-                // Update channel permissions
-                await channel.permissionOverwrites.set(permissionOverwrites, 'Channel locked by Manager');
+                        // Define roles that should have access
+                        const managerRoles = [
+                            config.ManagerRoleId,
+                            config.HeadDeveloperRoleId,
+                            config.OwnerRoleId,
+                        ];
 
-                // Create the embed with desired color and content
-                const embed = new EmbedBuilder()
-                    .setColor('#1E90FF') // Dodger Blue (neon light blue)
-                    .setTitle('🔒 Channel Locked')
-                    .setDescription(`This channel has been locked to Manager+ roles.${!isClosed && ticketOwner ? `\n<@${ticketOwnerId}> still has access.` : ''}`)
-                    .setFooter({ text: `Locked by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
-                    .setTimestamp();
+                        // Create permission overwrites
+                        const permissionOverwrites = [
+                            {
+                                id: interaction.guild.roles.everyone.id, // Deny @everyone
+                                deny: [PermissionsBitField.Flags.ViewChannel],
+                            },
+                            // Allow Manager+ roles
+                            ...managerRoles.map(roleId => ({
+                                id: roleId,
+                                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages],
+                            })),
+                        ];
 
-                // Provide feedback to the user via embed
-                return interaction.editReply({
-                    embeds: [embed],
-                    ephemeral: false, // Set to true if only the command executor should see the message
-                });
-            } catch (error) {
-                console.error(`Error in /lock command: ${error}`);
-                return interaction.editReply({ content: 'There was an error while trying to lock the channel.' });
-            }
-        };
+                        // If the ticket is not closed and the owner exists, allow the owner to view and send messages
+                        if (!isClosed && ticketOwner) {
+                            permissionOverwrites.push({
+                                id: ticketOwnerId,
+                                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages],
+                            });
+                        }
 
-        // Execute the lock command handler
-        await lockCommandHandler();
+                        // Update channel permissions
+                        await channel.permissionOverwrites.set(permissionOverwrites, 'Channel locked by Manager');
+
+                        // Create the embed with desired color and content
+                        const embed = new EmbedBuilder()
+                            .setColor('#1E90FF') // Dodger Blue (neon light blue)
+                            .setTitle('🔒 Channel Locked')
+                            .setDescription(`This channel has been locked to Manager+ roles.${!isClosed && ticketOwner ? `\n<@${ticketOwnerId}> still has access.` : ''}`)
+                            .setFooter({ text: `Locked by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
+                            .setTimestamp();
+
+                        // Provide feedback to the user via embed
+                        return interaction.editReply({
+                            embeds: [embed],
+                            ephemeral: false, // Set to true if only the command executor should see the message
+                        });
+                    } catch (error) {
+                        console.error(`Error in /lock command: ${error}`);
+                        return interaction.editReply({ content: 'There was an error while trying to lock the channel.' });
+                    }
+                };
+
+                // Execute the lock command handler
+                await lockCommandHandler();
+
+            } else if (interaction.commandName === 'unlock') {
+                // Separate unlock command handler
+                const unlockCommandHandler = async () => {
+                    // Ensure the command is used in a guild
+                    if (!interaction.guild) {
+                        return interaction.reply({ content: 'This command can only be used within a server.', ephemeral: true });
+                    }
+
+                    // Defer the reply to prevent the interaction from expiring
+                    await interaction.deferReply({ ephemeral: false });
+
+                    // Define roles that can use the command
+                    const allowedRoleIds = [
+                        config.ManagerRoleId,
+                        config.HeadDeveloperRoleId,
+                        config.OwnerRoleId,
+                    ];
+
+                    // Check if the user has one of the allowed roles
+                    const member = interaction.member;
+                    const hasPermission = member.roles.cache.some(role => allowedRoleIds.includes(role.id));
+
+                    if (!hasPermission) {
+                        // Fetch role mentions
+                        const roleMentions = allowedRoleIds.map(roleId => `<@&${roleId}>`).join('\n');
+
+                        // Create an embed to inform the user
+                        const embed = new EmbedBuilder()
+                            .setColor('#FF0000') // Red color for error
+                            .setTitle('Insufficient Permissions')
+                            .setDescription(`Only members with the following roles can use this command:\n${roleMentions}`)
+                            .setFooter({ text: `Requested by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
+                            .setTimestamp();
+
+                        return interaction.editReply({ embeds: [embed], ephemeral: true });
+                    }
+
+                    const channel = interaction.channel;
+
+                    // Check if the channel is a ticket channel by querying the database
+                    try {
+                        console.log(`Channel ID from bot: ${channel.id} (Length: ${channel.id.length})`);
+                        const [rows] = await client.pool.query('SELECT * FROM tickets WHERE channel_id = ?', [channel.id]);
+                        console.log(`Number of rows returned: ${rows.length}`);
+                        console.log('Rows:', rows);
+
+                        if (rows.length === 0) {
+                            return interaction.editReply({ content: 'This command can only be used in ticket channels.' });
+                        }
+
+                        const ticket = rows[0];
+
+                        // Fetch the ticket owner
+                        const ticketOwnerId = ticket.user_id;
+                        const ticketOwner = await interaction.guild.members.fetch(ticketOwnerId).catch(() => null);
+
+                        // Get the ticket type
+                        const ticketType = ticket.ticket_type;
+
+                        // Use getPermissionOverwrites to restore permissions
+                        const permissionOverwrites = getPermissionOverwrites(interaction.guild, ticketOwnerId, ticketType);
+
+                        // Update channel permissions
+                        await channel.permissionOverwrites.set(permissionOverwrites, 'Channel unlocked and permissions restored');
+
+                        // Create the embed with desired color and content
+                        const embed = new EmbedBuilder()
+                            .setColor('#1E90FF') // Dodger Blue (neon light blue)
+                            .setTitle('🔓 Channel Unlocked')
+                            .setDescription(`This channel has been unlocked and permissions have been restored.`)
+                            .setFooter({ text: `Unlocked by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
+                            .setTimestamp();
+
+                        // Provide feedback to the user via embed
+                        return interaction.editReply({
+                            embeds: [embed],
+                            ephemeral: false, // Set to true if only the command executor should see the message
+                        });
+                    } catch (error) {
+                        console.error(`Error in /unlock command: ${error}`);
+                        return interaction.editReply({ content: 'There was an error while trying to unlock the channel.' });
+                    }
+                };
+
+                // Execute the unlock command handler
+                await unlockCommandHandler();
+
+            } 
+
+        } 
+
+    } catch (error) {
+        console.error(`Error handling interaction: ${error.message}`);
+
+        // Respond to the interaction if possible
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({
+                content: 'An error occurred while processing your interaction.',
+                ephemeral: true,
+            });
+        } else if (interaction.isRepliable()) {
+            await interaction.reply({
+                content: 'An error occurred while processing your interaction.',
+                ephemeral: true,
+            });
+        }
     }
 });
-
+function getPermissionOverwrites(guild, userId, ticketType) {
+    console.log(`--- Begin Permission Setup ---`);
+    console.log(`Ticket Type: ${ticketType}`);
+    console.log(`Guild ID: ${guild.id}, User ID: ${userId}`);
+    
+    // Ensure all IDs are strings
+    const overwrites = [
+      {
+        id: String(guild.roles.everyone.id),
+        deny: [PermissionFlagsBits.ViewChannel],
+      },
+      {
+        id: String(userId),
+        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+      },
+    ];
+  
+    // Function to safely map permissions
+    const safeMapPermissions = (permissions) => permissions.map(p => p.toString());
+  
+    // Create a version of overwrites suitable for logging (convert BigInt to strings)
+    const logOverwrites = overwrites.map(ow => ({
+      id: ow.id,
+      allow: ow.allow ? safeMapPermissions(ow.allow) : [],
+      deny: ow.deny ? safeMapPermissions(ow.deny) : [],
+    }));
+    
+    console.log('Base overwrites setup:', JSON.stringify(logOverwrites, null, 2));
+  
+    if (['General', 'Report'].includes(ticketType)) {
+      console.log(`Adding permissions for Staff in General/Report ticket`);
+      overwrites.push({
+        id: String(config.staffRoleId),
+        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+      });
+    } else if (['Staff Report', 'Partnership'].includes(ticketType)) {
+      console.log(`Adding permissions for Admin in Staff Report/Partnership ticket`);
+      overwrites.push({
+        id: String(config.adminRoleId),
+        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+      });
+    } else if (ticketType === 'Appeal') {
+      console.log(`Setting permissions for Appeal ticket (Admin only)`);
+      overwrites.push(
+        {
+          id: String(config.staffRoleId),
+          deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+        },
+        {
+          id: String(config.adminRoleId),
+          allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+        }
+      );
+    }
+  
+    // Create a final version of overwrites suitable for logging
+    const finalLogOverwrites = overwrites.map(ow => ({
+      id: ow.id,
+      allow: ow.allow ? safeMapPermissions(ow.allow) : [],
+      deny: ow.deny ? safeMapPermissions(ow.deny) : [],
+    }));
+    
+    console.log(`Final overwrites for ticket type "${ticketType}":`, JSON.stringify(finalLogOverwrites, null, 2));
+    console.log(`--- End Permission Setup ---`);
+  
+    return overwrites;
+  }
 // Handler for the 'staff-list' Command
 async function handleStaffListCommand(interaction) {
     await interaction.deferReply(); // Defer reply to avoid interaction timeout
@@ -590,45 +1010,84 @@ async function handleStaffListCommand(interaction) {
     const embedTitleMode = selectedRole ? selectedRole.name : 'Staff';
 
     const embed = getPageEmbed(currentPage, sortedMembersArray, guild, interaction, totalPages, embedTitleMode);
-    const buttons = getPaginationButtons(currentPage, totalPages);
-    const message = await interaction.editReply({ embeds: [embed], components: [buttons], fetchReply: true });
-
-    client.pagination.set(interaction.user.id, { 
-        messageId: message.id, 
-        currentPage, 
-        sortedMembersArray, 
-        totalPages, 
-        embedTitleMode 
-    });
+    const buttons = getPaginationButtons(currentPage, totalPages, interaction.user.id);
+    await interaction.editReply({ embeds: [embed], components: [buttons], fetchReply: true });
 }
 
 // Pagination Handler
 async function handlePagination(interaction) {
+    // Parse the customId to extract prefix, action, userId
+    const [prefix, action, userId] = interaction.customId.split('_');
+
     // Ensure only the user who initiated the command can interact
-    const paginationState = client.pagination.get(interaction.user.id);
-
-    if (!paginationState || paginationState.messageId !== interaction.message.id) {
-        return interaction.reply({ content: `Only you can interact with these buttons.`, ephemeral: true });
+    if (interaction.user.id !== userId) {
+        return interaction.reply({ content: `> Only <@${userId}> can run this command.`, ephemeral: true });
     }
 
-    let { currentPage, sortedMembersArray, totalPages, embedTitleMode } = paginationState;
+    const guild = interaction.guild;
 
-    // Determine the new page based on the button clicked
-    if (interaction.customId === 'stafflist_next') {
-        currentPage = Math.min(currentPage + 1, totalPages);
-    } else if (interaction.customId === 'stafflist_prev') {
-        currentPage = Math.max(currentPage - 1, 1);
+    // Extract the current page number from the embed's title
+    const embed = interaction.message.embeds[0];
+    let currentPage = 1;
+    let totalPages = 1;
+    if (embed && embed.title) {
+        const match = embed.title.match(/\[(\d+)\/(\d+)\]/);
+        if (match) {
+            currentPage = parseInt(match[1]);
+            totalPages = parseInt(match[2]);
+        }
     }
 
-    // Update the pagination state
-    client.pagination.set(interaction.user.id, { 
-        ...paginationState, 
-        currentPage 
+    // Determine the new page based on the action
+    let newPage = currentPage;
+    if (action === 'next') {
+        newPage = Math.min(currentPage + 1, totalPages);
+    } else if (action === 'prev') {
+        newPage = Math.max(currentPage - 1, 1);
+    }
+
+    // Reconstruct the member list
+    const allStaffRoles = [
+        { name: 'Owner', id: config.OwnerRoleId },
+        { name: 'Head Developer', id: config.HeadDeveloperRoleId },
+        { name: 'Manager', id: config.ManagerRoleId },
+        { name: 'Developer', id: config.DeveloperRoleId },
+        { name: 'Designer', id: config.DesignerRoleId },
+        { name: 'Admin', id: config.AdminRoleId },
+        { name: 'Mod', id: config.ModRoleId },
+        { name: 'Helper', id: config.HelperRoleId },
+        { name: 'Staff Base Role', id: config.staffRoleId },
+    ];
+
+    await guild.members.fetch();
+
+    // Retrieve sortBy and order if you have a way to retain them; otherwise, use default values
+    const sortBy = null; // Replace with actual value if available
+    const order = 'ascending'; // Replace with actual value if available
+
+    const selectedRole = allStaffRoles.find(role => role.name.toLowerCase() === sortBy?.toLowerCase());
+    const memberList = guild.members.cache.filter(member => {
+        if (selectedRole) return member.roles.cache.has(selectedRole.id);
+        return member.roles.cache.some(role => allStaffRoles.map(r => r.id).includes(role.id));
     });
 
+    const sortedMembersArray = Array.from(memberList.values()).sort((a, b) => {
+        const roleIndexA = allStaffRoles.findIndex(role => a.roles.cache.has(role.id));
+        const roleIndexB = allStaffRoles.findIndex(role => b.roles.cache.has(role.id));
+        return order === 'ascending' ? roleIndexA - roleIndexB : roleIndexB - roleIndexA;
+    });
+
+    const pageSize = 10;
+    const totalPagesComputed = Math.ceil(sortedMembersArray.length / pageSize);
+
+    // Update totalPages in case it has changed
+    totalPages = totalPagesComputed;
+
+    const embedTitleMode = selectedRole ? selectedRole.name : 'Staff';
+
     // Create the updated embed and buttons
-    const updatedEmbed = getPageEmbed(currentPage, sortedMembersArray, interaction.guild, interaction, totalPages, embedTitleMode);
-    const updatedButtons = getPaginationButtons(currentPage, totalPages);
+    const updatedEmbed = getPageEmbed(newPage, sortedMembersArray, guild, interaction, totalPages, embedTitleMode);
+    const updatedButtons = getPaginationButtons(newPage, totalPages, userId);
 
     // Use interaction.update() to update the message
     await interaction.update({ embeds: [updatedEmbed], components: [updatedButtons] });
@@ -644,31 +1103,28 @@ function getPageEmbed(page, sortedMembersArray, guild, interaction, totalPages, 
         .setAuthor({ name: `Staff List`, iconURL: guild.iconURL() })
         .setTitle(`Mode: ${embedTitleMode} [${page}/${totalPages}]`)
         .setDescription(`▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n${pageMembers.map((member, i) => `\`${pageStartIndex + i + 1}.\` <@${member.id}>`).join('\n')}\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬`)
-        .setFooter({ 
-            text: `${sortedMembersArray.findIndex(m => m.user.id === interaction.user.id) + 1}. ${interaction.user.tag}`, 
-            iconURL: interaction.user.displayAvatarURL() 
+        .setFooter({
+            text: `${sortedMembersArray.findIndex(m => m.user.id === interaction.user.id) + 1}. ${interaction.user.tag}`,
+            iconURL: interaction.user.displayAvatarURL()
         });
 
     return embed;
 }
-
-// Function to Create Pagination Buttons
-function getPaginationButtons(page, totalPages) {
+function getPaginationButtons(page, totalPages, userId) {
     const prevButton = new ButtonBuilder()
-        .setCustomId('stafflist_prev')
+        .setCustomId(`stafflist_prev_${userId}`)
         .setStyle(ButtonStyle.Secondary)
-        .setEmoji('◀️')
+        .setEmoji('⬅️')
         .setDisabled(page === 1);
 
     const nextButton = new ButtonBuilder()
-        .setCustomId('stafflist_next')
+        .setCustomId(`stafflist_next_${userId}`)
         .setStyle(ButtonStyle.Secondary)
-        .setEmoji('▶️')
+        .setEmoji('➡️')
         .setDisabled(page === totalPages);
 
     return new ActionRowBuilder().addComponents(prevButton, nextButton);
 }
-
 // voting
 // pups voting
 
@@ -2834,8 +3290,10 @@ client.on('interactionCreate', async interaction => {
 // premium add
 client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand() || interaction.commandName !== 'premium') return;
-
+    
     const subcommand = interaction.options.getSubcommand();
+    if (subcommand === 'add') {
+
     const user = interaction.options.getUser('user');
 
     if (!user) {
@@ -2857,7 +3315,6 @@ client.on('interactionCreate', async interaction => {
         return interaction.reply({ content: 'Premium Manager role not found. Please check the configuration.', ephemeral: true });
     }
 
-    if (subcommand === 'add') {
         if (!interaction.member.roles.cache.has(premiumManagerRole.id)) {
             return interaction.reply({ content: `Only <@&${config.premiumManagerRoleId}> can add the Premium role.`, ephemeral: true });
         }
@@ -2915,6 +3372,167 @@ client.on('interactionCreate', async interaction => {
         } else {
             console.error('premium-announcements channel not found.');
         }
+    }
+});
+// premium list
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isCommand() || interaction.commandName !== 'premium') return;
+
+    const { commandName, options } = interaction;
+
+    if (commandName === 'premium') {
+        const subcommand = options.getSubcommand();
+
+        if (subcommand === 'list') {
+            const premiumRole = interaction.guild.roles.cache.get(config.premiumRoleId);
+
+            if (!premiumRole) {
+                return interaction.reply({ content: 'Premium role not found in this server.', ephemeral: true });
+            }
+
+            const membersWithRole = await interaction.guild.members.fetch();
+            const membersArray = membersWithRole
+                .filter(member => member.roles.cache.has(premiumRole.id))
+                .map(member => member);
+            const pageSize = 10;
+            const totalPages = Math.ceil(membersArray.length / pageSize);
+
+            if (totalPages === 0) {
+                const noMembersEmbed = new EmbedBuilder()
+                    .setDescription('```ini\nNo members with Premium role found.\n```')
+                    .setColor(0x980e00);
+                return interaction.reply({ embeds: [noMembersEmbed], ephemeral: true });
+            }
+
+            let currentPage = 0; // Start with the first page
+            const paginatedMembers = membersArray.slice(
+                currentPage * pageSize,
+                (currentPage + 1) * pageSize
+            );
+
+            const memberList = paginatedMembers
+                .map(
+                    (member, index) =>
+                        `\`\`${index + 1 + currentPage * pageSize}.\`\` <@${member.id}>`
+                )
+                .join('\n');
+            const userPosition =
+                membersArray.findIndex(member => member.id === interaction.user.id) + 1;
+
+            const listEmbed = new EmbedBuilder()
+                .setAuthor({ name: 'Premium List', iconURL: interaction.guild.iconURL() })
+                .setDescription(
+                    `Mode: **Premium** [${currentPage + 1}/${totalPages}]\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n${memberList}\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬`
+                )
+                .setFooter({
+                    text: `${userPosition}. [${interaction.user.username}]`,
+                    iconURL: interaction.user.displayAvatarURL(),
+                })
+                .setColor('#c79504');
+
+            const buttons = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`prev_premium_${interaction.user.id}_${currentPage}`)
+                    .setEmoji('⬅️')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled(currentPage === 0),
+                new ButtonBuilder()
+                    .setCustomId(`next_premium_${interaction.user.id}_${currentPage}`)
+                    .setEmoji('➡️')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled(currentPage === totalPages - 1)
+            );
+
+            await interaction.reply({
+                embeds: [listEmbed],
+                components: [buttons],
+                ephemeral: false,
+            });
+        }
+    }
+});
+// Button interaction handler for 'premium' list
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isButton()) return;
+
+    const customId = interaction.customId;
+
+    if (customId.startsWith('prev_premium_') || customId.startsWith('next_premium_')) {
+        const [action, , userId, currentPageStr] = customId.split('_');
+
+        if (userId !== interaction.user.id) {
+            return interaction.reply({
+                content: 'Only the user who initiated this command can interact with these buttons.',
+                ephemeral: true,
+            });
+        }
+
+        let currentPage = parseInt(currentPageStr);
+        const premiumRole = interaction.guild.roles.cache.get(config.premiumRoleId);
+
+        if (!premiumRole) {
+            return interaction.update({
+                content: 'Premium role not found.',
+                components: [],
+                embeds: [],
+            });
+        }
+
+        const membersWithRole = await interaction.guild.members.fetch();
+        const membersArray = membersWithRole
+            .filter(member => member.roles.cache.has(premiumRole.id))
+            .map(member => member);
+        const pageSize = 10;
+        const totalPages = Math.ceil(membersArray.length / pageSize);
+
+        if (action === 'next') {
+            currentPage += 1;
+        } else if (action === 'prev') {
+            currentPage -= 1;
+        }
+
+        if (currentPage < 0 || currentPage >= totalPages) {
+            return interaction.deferUpdate(); // Ignore invalid page numbers
+        }
+
+        const paginatedMembers = membersArray.slice(
+            currentPage * pageSize,
+            (currentPage + 1) * pageSize
+        );
+        const memberList = paginatedMembers
+            .map(
+                (member, index) =>
+                    `\`\`${index + 1 + currentPage * pageSize}.\`\` <@${member.id}>`
+            )
+            .join('\n');
+        const userPosition =
+            membersArray.findIndex(member => member.id === interaction.user.id) + 1;
+
+        const listEmbed = new EmbedBuilder()
+            .setAuthor({ name: 'Premium Members List', iconURL: interaction.guild.iconURL() })
+            .setDescription(
+                `Mode: **Premium** [${currentPage + 1}/${totalPages}]\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n${memberList}\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬`
+            )
+            .setFooter({
+                text: `${userPosition}. [${interaction.user.username}]`,
+                iconURL: interaction.user.displayAvatarURL(),
+            })
+            .setColor('#e96d6d');
+
+        const buttons = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`prev_premium_${interaction.user.id}_${currentPage}`)
+                .setEmoji('⬅️')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(currentPage === 0),
+            new ButtonBuilder()
+                .setCustomId(`next_premium_${interaction.user.id}_${currentPage}`)
+                .setEmoji('➡️')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(currentPage === totalPages - 1)
+        );
+
+        await interaction.update({ embeds: [listEmbed], components: [buttons] });
     }
 });
 
@@ -3403,11 +4021,11 @@ client.on('interactionCreate', async (interaction) => {
 
 client.on('interactionCreate', async (interaction) => {
     if (interaction.isChatInputCommand()) {
-        if (interaction.commandName === 'promote') {
+        if (interaction.commandName === 'upgrade') {
             await handlePromoteCommand(interaction);
         }
     } else if (interaction.isAutocomplete()) {
-        if (interaction.commandName === 'promote') {
+        if (interaction.commandName === 'upgrade') {
             await handlePromoteAutocomplete(interaction);
         }
     }
