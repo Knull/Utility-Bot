@@ -3347,6 +3347,8 @@ client.on('interactionCreate', async interaction => {
     }
 
     if (subcommand === 'remove') {
+        const premiumManagerRole = interaction.guild.roles.cache.get(config.premiumManagerRoleId);
+
         if (!interaction.member.roles.cache.has(premiumManagerRole.id)) {
             return interaction.reply({ content: `> Only <@&${config.premiumManagerRoleId}> can remove the Premium role.`, ephemeral: true });
         }
