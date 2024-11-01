@@ -109,6 +109,8 @@ async function sendEmbed(channel, embed, components) {
       'Report': isArchived ? config.archivedReportTicketsCategoryId : config.reportTicketsCategoryId,
       'Staff Report': isArchived ? config.archivedStaffReportTicketsCategoryId : config.staffReportTicketsCategoryId,
       'Partnership': isArchived ? config.archivedPartnershipTicketsCategoryId : config.partnershipTicketsCategoryId,
+      'Store': isArchived ? config.archivedStoreTicketsCategoryId : config.storeTicketsCategoryId,
+
     };
   
     return categoryMapping[ticketType] || (isArchived ? config.archivedTicketsCategoryId : config.ticketsCategoryId);
@@ -130,16 +132,22 @@ async function sendEmbed(channel, embed, components) {
             '- **⚖️ Appeal ➤** Appeal a ban or mute here.\n' +
             '- **🚩 Report ➤** Report a player here.\n' +
             '- **👮 Staff Report ➤** Report a staff member here.\n' +
-            '- **<a:partnership:1298227428866527285> Partnership ➤** Apply to be a server partner here.'
+            '- **<a:partnership:1298227428866527285> Partnership ➤** Apply to be a server partner here.\n' +
+            '- **🛒 Store ➤** Get assistance with store-related purchases.'
+
         );
   
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('create_general').setStyle(ButtonStyle.Secondary).setEmoji('<:general:1298227239069945888>'),
-        new ButtonBuilder().setCustomId('create_appeal').setStyle(ButtonStyle.Secondary).setEmoji('⚖️'),
-        new ButtonBuilder().setCustomId('create_report').setStyle(ButtonStyle.Secondary).setEmoji('🚩'),
-        new ButtonBuilder().setCustomId('create_staff_report').setStyle(ButtonStyle.Secondary).setEmoji('👮'),
-        new ButtonBuilder().setCustomId('create_partnership').setStyle(ButtonStyle.Secondary).setEmoji('<a:partnership:1298227428866527285>')
-      );
+        const row1 = new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId('create_general').setStyle(ButtonStyle.Secondary).setEmoji('<:general:1298227239069945888>'),
+          new ButtonBuilder().setCustomId('create_appeal').setStyle(ButtonStyle.Secondary).setEmoji('⚖️'),
+          new ButtonBuilder().setCustomId('create_report').setStyle(ButtonStyle.Secondary).setEmoji('🚩'),
+          new ButtonBuilder().setCustomId('create_staff_report').setStyle(ButtonStyle.Secondary).setEmoji('👮'),
+          new ButtonBuilder().setCustomId('create_partnership').setStyle(ButtonStyle.Secondary).setEmoji('<a:partnership:1298227428866527285>')
+        );
+    
+        const row2 = new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId('create_store').setStyle(ButtonStyle.Secondary).setEmoji('🛒')
+        );
   
       const messages = await ticketsChannel.messages.fetch({ limit: 10 });
       const setupMessageExists = messages.some(
@@ -150,7 +158,7 @@ async function sendEmbed(channel, embed, components) {
       );
   
       if (!setupMessageExists) {
-        await ticketsChannel.send({ embeds: [embed], components: [row] });
+        await ticketsChannel.send({ embeds: [embed], components: [row1, row2] });
         console.log('Ticket system setup message sent.');
       } else {
         console.log('Ticket system setup message already exists.');
@@ -173,13 +181,14 @@ async function handleInteraction(client, interaction) {
         } else if (customId.startsWith('partnership_details_')) {
           await handlePartnershipDetails(interaction);
         } else {
-          if (['create_general', 'create_appeal', 'close_ticket'].includes(customId)) {
+          if (['create_general', 'create_appeal', 'close_ticket', 'create_store'].includes(customId)) {
             await interaction.deferReply({ ephemeral: true });
           }
   
           switch (customId) {
             case 'create_general':
             case 'create_appeal':
+            case 'create_store':
               await handleTicketCreation(interaction, customId);
               break;
             case 'create_report':
@@ -547,8 +556,8 @@ async function handleInteraction(client, interaction) {
     
     console.log('Base overwrites setup:', JSON.stringify(logOverwrites, null, 2));
   
-    if (['General', 'Report'].includes(ticketType)) {
-      console.log(`Adding permissions for Staff in General/Report ticket`);
+    if (['General', 'Report', 'Store'].includes(ticketType)) {
+      console.log(`Adding permissions for Staff in General/Report/Store ticket`);
       overwrites.push({
         id: String(config.staffRoleId),
         allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
@@ -886,6 +895,8 @@ async function handleTicketCreation(interaction, type) {
           'create_report': 'Report',
           'create_staff_report': 'Staff Report',
           'create_partnership': 'Partnership',
+          'create_store': 'Store',
+
       };
 
       const ticketType = ticketTypeMap[type] || 'Ticket';

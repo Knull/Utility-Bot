@@ -24,6 +24,7 @@ module.exports = {
     reportTicketsCategoryId: '1298233797338202183',
     staffReportTicketsCategoryId: '1298233947792216127',
     partnershipTicketsCategoryId: '1298234031997190156',
+    storeTicketsCategoryId: '1301876035029041192',
 
     // Category IDs for archived tickets
     archivedGeneralTicketsCategoryId: '1298234305910411315',
@@ -31,6 +32,7 @@ module.exports = {
     archivedReportTicketsCategoryId: '1298234754029850715',
     archivedStaffReportTicketsCategoryId: '1298234931327275120',
     archivedPartnershipTicketsCategoryId: '1298235041230622821',
+    archivedStoreTicketsCategoryId: '1301876100825088052',
 
     // Log channel IDs
     ticketLogsChannelId1: '1228653985876021294', // For General, Appeal, Report tickets
