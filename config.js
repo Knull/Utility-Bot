@@ -27,12 +27,12 @@ module.exports = {
     storeTicketsCategoryId: '1301876035029041192',
 
     // Category IDs for archived tickets
-    archivedGeneralTicketsCategoryId: '1298234305910411315',
-    archivedAppealTicketsCategoryId: '1298234640397766667',
-    archivedReportTicketsCategoryId: '1298234754029850715',
-    archivedStaffReportTicketsCategoryId: '1298234931327275120',
-    archivedPartnershipTicketsCategoryId: '1298235041230622821',
-    archivedStoreTicketsCategoryId: '1301876100825088052',
+    archivedGeneralTicketsCategoryId: '1305481698808434699',
+    archivedAppealTicketsCategoryId: '1305481698808434699',
+    archivedReportTicketsCategoryId: '1305481698808434699',
+    archivedStaffReportTicketsCategoryId: '1305481698808434699',
+    archivedPartnershipTicketsCategoryId: '1305481698808434699',
+    archivedStoreTicketsCategoryId: '1305481698808434699',
 
     // Log channel IDs
     ticketLogsChannelId1: '1228653985876021294', // For General, Appeal, Report tickets
@@ -50,5 +50,9 @@ module.exports = {
     ScreensharerRoleId: '1228653981010497598',
     TrialScreensharerRoleId: '1228653981010497597',
     announcementChannelId: '1299768976360079401',
-    ticketBlacklistRoleId: '1264857224338079755'
+    ticketBlacklistRoleId: '1264857224338079755',
+
+    // booster
+    BoosterRoleId: '1243398569206222892',
+    BoostsChannelId: '1306646686650732584',
 };

@@ -7,6 +7,7 @@ const config = require('./config');
 const { setupTicketSystem, handleInteraction, handleAddCommand, handleCloseTicket, handleClaimTicket, handleClaimCommand, handleRemoveCommand } = require('./ticketHandlers.js');
 const { JSDOM } = require('jsdom');
 const axios = require('axios');
+const boosterHandler = require('./booster.js');
 
 const mysql = require('mysql2/promise');
 const pool = mysql.createPool({
@@ -31,7 +32,8 @@ const pool = mysql.createPool({
     partials: [
         Partials.Message, 
         Partials.Channel, 
-        Partials.Reaction
+        Partials.Reaction,
+        Partials.GuildMember
     ]
 });
 
@@ -39,6 +41,24 @@ const rest = new REST({ version: '10' }).setToken(config.token);
 client.pool = pool;
 
 const commands = [
+    {
+        name: 'join',
+        description: 'Announce a user joining the staff team.',
+        options: [
+            {
+                name: 'user',
+                description: 'User joining the staff team.',
+                type: 6, // USER type
+                required: true,
+            },
+            {
+                name: 'role',
+                description: 'Role the user is joining as.',
+                type: 8, // ROLE type
+                required: true,
+            },
+        ],
+    },
     {
         name: 'departure',
         description: 'Announce the departure of a staff member.',
@@ -472,6 +492,7 @@ client.on('interactionCreate', async interaction => {
 
 client.login(config.token);
 const ownerId = '1155078877803192420';
+boosterHandler(client);
 
 async function sendErrorLog(error) {
     try {
@@ -490,7 +511,6 @@ async function sendErrorLog(error) {
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isCommand()) return;
 
-    // Ensure the command is used in a guild
     if (!interaction.guild) {
         return interaction.reply({
             content: 'This command can only be used within a server.',
@@ -499,12 +519,9 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     const commandName = interaction.commandName;
-
-    // List of commands that require permission checks
-    const restrictedCommands = ['departure', 'return', 'promote'];
+    const restrictedCommands = ['departure', 'return', 'promote', 'join'];
 
     if (restrictedCommands.includes(commandName)) {
-        // Define roles that can use the command (Admin+)
         const allowedRoleIds = [
             config.AdminRoleId,
             config.ManagerRoleId,
@@ -512,21 +529,18 @@ client.on('interactionCreate', async (interaction) => {
             config.OwnerRoleId,
         ];
 
-        // Check if the user has one of the allowed roles
         const member = interaction.member;
         const hasPermission = member.roles.cache.some((role) =>
             allowedRoleIds.includes(role.id)
         );
 
         if (!hasPermission) {
-            // Fetch role mentions
             const roleMentions = allowedRoleIds
                 .map((roleId) => `<@&${roleId}>`)
                 .join('\n');
 
-            // Create an embed to inform the user
             const embed = new EmbedBuilder()
-                .setColor('#FF0000') // Red color for error
+                .setColor('#FF0000')
                 .setTitle('Insufficient Permissions')
                 .setDescription(
                     `Only members with these roles can use this command:\n${roleMentions}`
@@ -540,91 +554,86 @@ client.on('interactionCreate', async (interaction) => {
             return interaction.reply({ embeds: [embed], ephemeral: true });
         }
 
-        // Proceed with the command
-        if (['departure', 'return', 'promote'].includes(commandName)) {
-            await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ ephemeral: true });
 
-            const announcementChannel = interaction.guild.channels.cache.get(
-                config.announcementChannelId
-            );
-            if (!announcementChannel) {
-                return interaction.editReply({
-                    content: 'Announcement channel not found.',
-                    ephemeral: true,
-                });
-            }
-
-            const userOption = interaction.options.getUser('user');
-            const roleOption = interaction.options.getRole('role');
-
-            // Fetch the member object of the user
-            const user = await interaction.guild.members
-                .fetch(userOption.id)
-                .catch(() => null);
-            if (!user) {
-                return interaction.editReply({
-                    content: 'User not found in this server.',
-                    ephemeral: true,
-                });
-            }
-
-            const role = interaction.guild.roles.cache.get(roleOption.id);
-            if (!role) {
-                return interaction.editReply({
-                    content: 'Role not found in this server.',
-                    ephemeral: true,
-                });
-            }
-
-            // Prepare the embed
-            const embed = new EmbedBuilder()
-                .setFooter({
-                    text: interaction.guild.name,
-                    iconURL: interaction.guild.iconURL(),
-                })
-                .setTimestamp()
-                .setColor(role.color || 0x00ae86); // Default color if role color is not set
-
-            // Set the author with role icon if available
-            const roleIconURL = role.iconURL();
-            if (roleIconURL) {
-                embed.setAuthor({
-                    name: `${role.name} ${capitalizeFirstLetter(commandName)}`,
-                    iconURL: roleIconURL,
-                });
-            } else {
-                embed.setAuthor({
-                    name: `${role.name} ${capitalizeFirstLetter(commandName)}`,
-                });
-            }
-
-            // Construct the embed description based on the command
-            if (commandName === 'departure') {
-                embed.setDescription(`- ${user} is no longer a **<@&${role.id}>**`);
-                // Remove the role from the user
-            } else if (commandName === 'return') {
-                embed.setDescription(
-                    `- ${user} has returned to our staff team as a **<@&${role.id}>**!`
-                );
-                // Add the role to the user
-            } else if (commandName === 'promote') {
-                embed.setDescription(`- ${user} has been promoted to **<@&${role.id}>**!`);
-
-                
-
-            }
-
-            // Send the embed to the announcement channel
-            await announcementChannel.send({ embeds: [embed] });
-
-            // Confirm the action to the command executor
-            await interaction.editReply({
-                content: `${capitalizeFirstLetter(commandName)} announcement sent.`,
+        const announcementChannel = interaction.guild.channels.cache.get(
+            config.announcementChannelId
+        );
+        if (!announcementChannel) {
+            return interaction.editReply({
+                content: 'Announcement channel not found.',
                 ephemeral: true,
             });
         }
-    } 
+
+        const userOption = interaction.options.getUser('user');
+        const roleOption = interaction.options.getRole('role');
+
+        const user = await interaction.guild.members
+            .fetch(userOption.id)
+            .catch(() => null);
+        if (!user) {
+            return interaction.editReply({
+                content: 'User not found in this server.',
+                ephemeral: true,
+            });
+        }
+
+        const role = interaction.guild.roles.cache.get(roleOption.id);
+        if (!role) {
+            return interaction.editReply({
+                content: 'Role not found in this server.',
+                ephemeral: true,
+            });
+        }
+
+        const embed = new EmbedBuilder()
+            .setFooter({
+                text: interaction.guild.name,
+                iconURL: interaction.guild.iconURL(),
+            })
+            .setTimestamp()
+            .setColor(role.color || 0x00ae86);
+
+        const roleIconURL = role.iconURL();
+
+        // Set the embed title and description dynamically based on the command
+        if (commandName === 'join') {
+            embed.setAuthor({
+                name: `New ${role.name}!`,
+                iconURL: roleIconURL,
+            });
+            embed.setDescription(`- ${user} has joined the staff team as a **<@&${role.id}>**`);
+        } else if (commandName === 'departure') {
+            embed.setAuthor({
+                name: `${role.name} Departure`,
+                iconURL: roleIconURL,
+            });
+            embed.setDescription(`- ${user} is no longer a **<@&${role.id}>**`);
+        } else if (commandName === 'return') {
+            embed.setAuthor({
+                name: `${role.name} Return`,
+                iconURL: roleIconURL,
+            });
+            embed.setDescription(`- ${user} has returned to our staff team as a **<@&${role.id}>**`);
+        } else if (commandName === 'promote') {
+            embed.setAuthor({
+                name: `${role.name} Promotion`,
+                iconURL: roleIconURL,
+            });
+            embed.setDescription(`- ${user} has been promoted to **<@&${role.id}>**`);
+        }
+
+        await announcementChannel.send({ embeds: [embed] });
+
+        await interaction.editReply({
+            content: `${capitalizeFirstLetter(commandName)} announcement sent.`,
+            ephemeral: true,
+        });
+    }
 });
+
+
 
 // Utility function to capitalize the first letter
 function capitalizeFirstLetter(string) {
@@ -779,7 +788,7 @@ client.on('interactionCreate', async (interaction) => {
                         const embed = new EmbedBuilder()
                             .setColor('#1E90FF') // Dodger Blue (neon light blue)
                             .setTitle('🔒 Channel Locked')
-                            .setDescription(`This channel has been locked to Manager+ roles.${!isClosed && ticketOwner ? `\n<@${ticketOwnerId}> still has access.` : ''}`)
+                            .setDescription(`This channel has been locked to Manager+ roles.${!isClosed && ticketOwner ? `\n> <@${ticketOwnerId}> still has access.` : ''}`)
                             .setFooter({ text: `Locked by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
                             .setTimestamp();
 
