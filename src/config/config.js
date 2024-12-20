@@ -19,7 +19,6 @@ module.exports = {
     // New configurations
 
     // Category IDs for open tickets
-    BlacklistRoleId: '1264857224338079755',
     generalTicketsCategoryId: '1298233635098464327',
     appealTicketsCategoryId: '1298233726924226560',
     reportTicketsCategoryId: '1298233797338202183',

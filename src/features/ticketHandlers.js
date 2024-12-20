@@ -164,118 +164,89 @@ async function sendEmbed(channel, embed, components) {
     }
   }
   
-  async function handleInteraction(client, interaction) {
+async function handleInteraction(client, interaction) {
     try {
-        if (interaction.isButton()) {
-            const { customId } = interaction;
-            console.log(`Button interaction received: ${customId}`);
-
-            // Define the list of ticket creation button IDs
-            const ticketCreationButtons = [
-                'create_general',
-                'create_appeal',
-                'create_store',
-                'create_staff_report',
-                'create_partnership'
-            ];
-
-            // **First: Check if the clicked button is a ticket creation button**
-            if (ticketCreationButtons.includes(customId)) {
-                // **Second: Check if the user has the BlacklistRoleId**
-                if (interaction.member.roles.cache.has(config.BlacklistRoleId)) {
-                    // Log the attempt for administrative purposes
-                    console.log(`Blacklisted user ${interaction.user.tag} (${interaction.user.id}) attempted to create a ticket.`);
-
-                    // Create the embed message
-                    const blacklistEmbed = new EmbedBuilder()
-                        .setColor(0xff0000) // Red color to indicate an error or warning
-                        .setDescription(`> You are <@&${config.BlacklistRoleId}>. This cannot be appealed.`);
-
-                    // Reply with the embed and prevent further handling
-                    return await interaction.reply({ embeds: [blacklistEmbed], ephemeral: true });
-                }
-            }
-
-            // **Proceed with handling other button interactions**
-            if (customId.startsWith('evidence_')) {
-                await handleEvidenceButton(interaction);
-            } else if (customId.startsWith('partnership_details_')) {
-                await handlePartnershipDetails(interaction);
-            } else {
-                if (['create_general', 'create_appeal', 'close_ticket', 'create_store'].includes(customId)) {
-                    await interaction.deferReply({ ephemeral: true });
-                }
-
-                switch (customId) {
-                    case 'create_general':
-                    case 'create_appeal':
-                    case 'create_store':
-                        await handleTicketCreation(interaction, customId);
-                        break;
-                    case 'create_staff_report':
-                    case 'create_partnership':
-                        await showTicketModal(interaction, customId);
-                        break;
-                    case 'close_ticket':
-                        await handleCloseTicket(interaction);
-                        break;
-                    case 'claim_ticket':
-                        await promptReason(client, interaction, 'claim_ticket');
-                        break;
-                    case 'delete_ticket':
-                        await promptReason(client, interaction, 'delete_ticket');
-                        break;
-                    case 'reopen_ticket':
-                        await handleReopenTicket(interaction);
-                        break;
-                    default:
-                        console.warn(`Unhandled button customId: ${customId}`);
-                        break;
-                }
-            }
-        } else if (interaction.isCommand()) {
-            const { commandName } = interaction;
-
-            // Handle slash commands
-            if (commandName === 'add') {
-                await handleAddCommand(interaction);
-            } else if (commandName === 'close') {
-                await handleCloseTicket(interaction);
-            } else if (commandName === 'claim') {
-                const reason = interaction.options.getString('reason', true);
-                await handleClaimCommand(interaction, reason);
-            }
-        } else if (interaction.type === InteractionType.ModalSubmit) {
-            // Handle modal submissions
-            console.log(`Modal submit interaction received: ${interaction.customId}`);
-            if (interaction.customId.startsWith('modal_')) {
-                const ticketType = interaction.customId.replace('modal_', '');
-                await handleModalSubmission(interaction, ticketType);
-            } else if (interaction.customId.startsWith('reason_')) {
-                const reason = interaction.fields.getTextInputValue('reason');
-                if (interaction.customId === 'reason_claim_ticket') {
-                    await handleClaimTicket(client, interaction, reason);
-                } else if (interaction.customId === 'reason_delete_ticket') {
-                    await handleDeleteTicket(client, interaction, reason);
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Error handling interaction:', error);
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({
-                content: 'An error occurred while processing your request.',
-                ephemeral: true,
-            });
+      if (interaction.isButton()) {
+        const { customId } = interaction;
+        console.log(`Button interaction received: ${customId}`);
+  
+        if (customId.startsWith('evidence_')) {
+          await handleEvidenceButton(interaction);
+        } else if (customId.startsWith('partnership_details_')) {
+          await handlePartnershipDetails(interaction);
         } else {
-            await interaction.reply({
-                content: 'An error occurred while processing your request.',
-                ephemeral: true,
-            });
+          if (['create_general', 'create_appeal', 'close_ticket', 'create_store'].includes(customId)) {
+            await interaction.deferReply({ ephemeral: true });
+          }
+  
+          switch (customId) {
+            case 'create_general':
+            case 'create_appeal':
+            case 'create_store':
+              await handleTicketCreation(interaction, customId);
+              break;
+            case 'create_staff_report':
+            case 'create_partnership':
+              await showTicketModal(interaction, customId);
+              break;
+            case 'close_ticket':
+              await handleCloseTicket(interaction);
+              break;
+            case 'claim_ticket':
+              await promptReason(client, interaction, 'claim_ticket');
+              break;
+            case 'delete_ticket':
+              await promptReason(client, interaction, 'delete_ticket');
+              break;
+            case 'reopen_ticket':
+              await handleReopenTicket(interaction);
+              break;
+            default:
+              break;
+          }
         }
+      } else if (interaction.isCommand()) {
+        const { commandName } = interaction;
+  
+        // Handle slash commands
+        if (commandName === 'add') {
+          await handleAddCommand(interaction);
+        } else if (commandName === 'close') {
+          await handleCloseTicket(interaction);
+        } else if (commandName === 'claim') {
+          const reason = interaction.options.getString('reason', true);
+          await handleClaimCommand(interaction, reason);
+        }
+      } else if (interaction.type === InteractionType.ModalSubmit) {
+        // Handle modal submissions
+        console.log(`Modal submit interaction received: ${interaction.customId}`);
+        if (interaction.customId.startsWith('modal_')) {
+          const ticketType = interaction.customId.replace('modal_', '');
+          await handleModalSubmission(interaction, ticketType);
+        } else if (interaction.customId.startsWith('reason_')) {
+          const reason = interaction.fields.getTextInputValue('reason');
+          if (interaction.customId === 'reason_claim_ticket') {
+            await handleClaimTicket(client, interaction, reason);
+          } else if (interaction.customId === 'reason_delete_ticket') {
+            await handleDeleteTicket(client, interaction, reason);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error handling interaction:', error);
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({
+          content: 'An error occurred while processing your request.',
+          ephemeral: true,
+        });
+      } else {
+        await interaction.reply({
+          content: 'An error occurred while processing your request.',
+          ephemeral: true,
+        });
+      }
     }
-}
-
+  }
   
   
   

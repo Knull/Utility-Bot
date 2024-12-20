@@ -1607,7 +1607,7 @@ client.on('interactionCreate', async interaction => {
   
             // Initial embed for command initiator
             const initialEmbed = new EmbedBuilder()
-              .setDescription(`Vouches Required\n> In order to remove <@${user.id}> from <@&${config.pupsRoleId}>, you need at least \`3\` vouches.`)
+              .setDescription(`Vouches Required\n> In order to remove <@${user.id}> from <@&${config.pupsRoleId}>, you need at least \`6\` vouches.`)
               .setFooter({ text: 'Click the button to vouch', iconURL: interaction.guild.iconURL() })
               .setColor('#3640b7')
               .setTimestamp();
@@ -1775,7 +1775,7 @@ client.on('interactionCreate', async interaction => {
         await vouchMessage.edit({ embeds: [updatedVouchEmbed] });
   
         // Handle the final vote
-        if (currentVotes >= 3) {
+        if (currentVotes >= 6) {
           // Demote the user by removing the role
           const role = interaction.guild.roles.cache.get(config.pupsRoleId);
           const member = interaction.guild.members.cache.get(userId);
@@ -1839,7 +1839,7 @@ client.on('interactionCreate', async interaction => {
         } else {
           // Still need more vouches
           return interaction.followUp({
-            content: `Vouched successfully! You need \`${3 - currentVotes}\` more vouches.`,
+            content: `Vouched successfully! You need \`${6 - currentVotes}\` more vouches.`,
             ephemeral: true
           });
         }
@@ -2916,7 +2916,7 @@ client.on('interactionCreate', async interaction => {
 
                     // Initial embed for command initiator
                     const initialEmbed = new EmbedBuilder()
-                        .setDescription(`Vouches Required\n> In order to remove <@${user.id}> from <@&${roleToRemove.id}>, you need at least \`3\` vouches.`)
+                        .setDescription(`Vouches Required\n> In order to remove <@${user.id}> from <@&${roleToRemove.id}>, you need at least \`6\` vouches.`)
                         .setFooter({ text: 'Click the button to vouch', iconURL: interaction.guild.iconURL() })
                         .setColor('#3640b7')
                         .setTimestamp();
@@ -3091,7 +3091,7 @@ client.on('interactionCreate', async interaction => {
             await vouchMessage.edit({ embeds: [updatedVouchEmbed] });
 
             // Handle the final vote
-            if (currentVotes >= 3) {
+            if (currentVotes >= 6) {
                 // Demote the user by removing the role
                 const member = interaction.guild.members.cache.get(userId);
                 await closePreviousPoll(pollId);
@@ -3152,7 +3152,7 @@ client.on('interactionCreate', async interaction => {
             } else {
                 // Still need more vouches
                 return interaction.followUp({
-                    content: `Vouched successfully! You need \`${3 - currentVotes}\` more vouches.`,
+                    content: `Vouched successfully! You need \`${6 - currentVotes}\` more vouches.`,
                     ephemeral: true
                 });
             }
