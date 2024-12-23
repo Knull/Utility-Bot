@@ -1,7 +1,8 @@
 // events/interactionCreate.js
 const { Collection } = require('discord.js');
-const pagination = require('../utilities/pagination');
+const pagination = require('../utilities/pagination'); // If you have a pagination utility
 const { handleButtonInteraction } = require('../handlers/buttonHandler');
+const { handlePromoteCommand, handlePremiumList } = require('../handlers/premiumHandler');
 
 module.exports = {
     name: 'interactionCreate',
@@ -17,13 +18,19 @@ module.exports = {
                 console.error(`Error executing ${interaction.commandName}:`, error);
                 await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
             }
-        } else if (interaction.isButton()) {
-            if (interaction.customId.startsWith('stafflist_')) {
-                await pagination.handlePagination(interaction);
-            } else if (interaction.customId.startsWith('unblacklist_')) {
-                await handleButtonInteraction(interaction, client);
+        } else if (interaction.isAutocomplete()) {
+            const command = client.commands.get(interaction.commandName);
+
+            if (!command || !command.autocomplete) return;
+
+            try {
+                await command.autocomplete(interaction);
+            } catch (error) {
+                console.error(`Error handling autocomplete for ${interaction.commandName}:`, error);
+                await interaction.respond([{ name: 'Error fetching suggestions', value: 'none' }]);
             }
-            // Handle other button interactions here if necessary
+        } else if (interaction.isButton()) {
+            await handleButtonInteraction(interaction, client);
         }
         // Handle other interaction types if necessary
     },

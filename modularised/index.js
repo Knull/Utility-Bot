@@ -1,3 +1,4 @@
+// index.js
 const { Client, GatewayIntentBits, Partials, Collection, EmbedBuilder } = require('discord.js');
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v10');
@@ -10,10 +11,10 @@ const mysql = require('mysql2/promise');
 
 // Initialize MySQL Pool
 const pool = mysql.createPool({
-    host: '216.225.202.122',
-    user: 'user_phpmyadmin',
-    password: 'SepHup9ePRap@lch2tRO',
-    database: 'PRBW',
+    host: config.dbHost,
+    user: config.dbUser,
+    password: config.dbPassword,
+    database: config.dbName,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
@@ -53,11 +54,11 @@ for (const file of commandFiles) {
     const filePath = path.join(commandsPath, file);
     const command = require(filePath);
     // Set a new item in the Collection
-    if ('data' in command && 'execute' in command) {
+    if ('data' in command && ('execute' in command || 'autocomplete' in command)) {
         client.commands.set(command.data.name, command);
         commands.push(command.data.toJSON());
     } else {
-        console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+        console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute/autocomplete" property.`);
     }
 }
 
@@ -100,7 +101,8 @@ client.login(config.token);
 boosterHandler(client);
 
 // Catch uncaught exceptions and unhandled promise rejections
-const ownerId = '1155078877803192420';
+const ownerId = config.ownerId; // Ensure ownerId is defined in config.js
+
 async function sendErrorLog(error) {
     try {
         const user = await client.users.fetch(ownerId);
@@ -119,7 +121,7 @@ async function sendErrorLog(error) {
 process.on("uncaughtException", sendErrorLog);
 process.on("unhandledRejection", sendErrorLog);
 
-// Define Staff Roles
+// Define Staff Roles (if needed globally)
 const staffRoles = [
     config.OwnerRoleId,
     config.HeadDeveloperRoleId,
