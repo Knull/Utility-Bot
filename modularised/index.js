@@ -1,0 +1,134 @@
+const { Client, GatewayIntentBits, Partials, Collection, EmbedBuilder } = require('discord.js');
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v10');
+const fs = require('fs');
+const path = require('path');
+const config = require('./config/config');
+const { setupTicketSystem } = require('./ticketHandlers.js');
+const boosterHandler = require('./booster.js');
+const mysql = require('mysql2/promise');
+
+// Initialize MySQL Pool
+const pool = mysql.createPool({
+    host: '216.225.202.122',
+    user: 'user_phpmyadmin',
+    password: 'SepHup9ePRap@lch2tRO',
+    database: 'PRBW',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+});
+
+// Initialize Discord Client
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildMembers, 
+        GatewayIntentBits.GuildMessageReactions,
+    ],
+    partials: [
+        Partials.Message, 
+        Partials.Channel, 
+        Partials.Reaction,
+        Partials.GuildMember
+    ]
+});
+
+// Attach MySQL Pool to Client
+client.pool = pool;
+
+// Initialize Collection for Commands
+client.commands = new Collection();
+
+// Load Command Files
+const commandsPath = path.join(__dirname, 'commands');
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+
+const commands = [];
+
+for (const file of commandFiles) {
+    const filePath = path.join(commandsPath, file);
+    const command = require(filePath);
+    // Set a new item in the Collection
+    if ('data' in command && 'execute' in command) {
+        client.commands.set(command.data.name, command);
+        commands.push(command.data.toJSON());
+    } else {
+        console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+    }
+}
+
+// Register Commands with Discord
+const rest = new REST({ version: '10' }).setToken(config.token);
+
+(async () => {
+    try {
+        console.log('Started refreshing application (/) commands.');
+
+        await rest.put(
+            Routes.applicationGuildCommands(config.clientId, config.guildId),
+            { body: commands },
+        );
+
+        console.log('Successfully reloaded application (/) commands.');
+    } catch (error) {
+        console.error(error);
+    }
+})();
+
+// Load Event Files
+const eventsPath = path.join(__dirname, 'events');
+const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+
+for (const file of eventFiles) {
+    const filePath = path.join(eventsPath, file);
+    const event = require(filePath);
+    if (event.once) {
+        client.once(event.name, (...args) => event.execute(...args, client));
+    } else {
+        client.on(event.name, (...args) => event.execute(...args, client));
+    }
+}
+
+// Log in to Discord
+client.login(config.token);
+
+// Handle Booster Functionality
+boosterHandler(client);
+
+// Catch uncaught exceptions and unhandled promise rejections
+const ownerId = '1155078877803192420';
+async function sendErrorLog(error) {
+    try {
+        const user = await client.users.fetch(ownerId);
+        
+        const errorEmbed = new EmbedBuilder()
+            .setColor(0x8B0000) // Dark red color
+            .setDescription(`\`\`\`js\n${error.stack || error}\n\`\`\``)
+            .setTimestamp(); // Adds a timestamp to the embed
+
+        await user.send({ embeds: [errorEmbed] });
+    } catch (err) {
+        // If DM fails, no additional action is taken
+    }
+}
+
+process.on("uncaughtException", sendErrorLog);
+process.on("unhandledRejection", sendErrorLog);
+
+// Define Staff Roles
+const staffRoles = [
+    config.OwnerRoleId,
+    config.HeadDeveloperRoleId,
+    config.ManagerRoleId,
+    config.DeveloperRoleId,
+    config.DesignerRoleId,
+    config.AdminRoleId,
+    config.ModRoleId,
+    config.HelperRoleId,
+];
+
+client.pagination = new Collection();
