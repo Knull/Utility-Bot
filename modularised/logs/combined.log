@@ -136,3 +136,69 @@
 {"level":"info","message":"Button Interaction Received: customId = upvote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-18 21:59:42"}
 {"level":"info","message":"Handler found for prefix: upvote_pups","service":"discord-bot","timestamp":"2025-01-18 21:59:42"}
 {"level":"error","message":"Error handling interaction: TypeError: this.handleVoteButton is not a function","service":"discord-bot","timestamp":"2025-01-18 21:59:42"}
+{"level":"info","message":"Button Interaction Received: customId = upvote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-18 23:30:10"}
+{"level":"info","message":"Handler found for prefix: upvote_pups","service":"discord-bot","timestamp":"2025-01-18 23:30:10"}
+{"level":"info","message":"User 1155078877803192420 cast a upvote on poll for user 1323540254522740777","service":"discord-bot","timestamp":"2025-01-18 23:30:13"}
+{"level":"error","message":"Error handling interaction: DiscordAPIError[10062]: Unknown interaction","service":"discord-bot","timestamp":"2025-01-18 23:30:15"}
+{"level":"info","message":"Button Interaction Received: customId = downvote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-18 23:30:24"}
+{"level":"info","message":"Handler found for prefix: downvote_pups","service":"discord-bot","timestamp":"2025-01-18 23:30:24"}
+{"level":"info","message":"User 1155078877803192420 changed their vote to downvote on poll for user 1323540254522740777","service":"discord-bot","timestamp":"2025-01-18 23:30:26"}
+{"level":"error","message":"Error handling interaction: DiscordAPIError[10062]: Unknown interaction","service":"discord-bot","timestamp":"2025-01-18 23:30:28"}
+{"level":"info","message":"Button Interaction Received: customId = upvote_pups_1155078877803192420","service":"discord-bot","timestamp":"2025-01-18 23:31:23"}
+{"level":"info","message":"Handler found for prefix: upvote_pups","service":"discord-bot","timestamp":"2025-01-18 23:31:23"}
+{"level":"info","message":"Button Interaction Received: customId = end_vote_pups_1155078877803192420","service":"discord-bot","timestamp":"2025-01-18 23:31:30"}
+{"level":"info","message":"Handler found for prefix: end_vote_pups","service":"discord-bot","timestamp":"2025-01-18 23:31:30"}
+{"level":"info","message":"Button Interaction Received: customId = view_votes_pups_144","service":"discord-bot","timestamp":"2025-01-18 23:31:46"}
+{"level":"warn","message":"No handler found for button with customId: view_votes_pups_144","service":"discord-bot","timestamp":"2025-01-18 23:31:46"}
+{"level":"error","message":"Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')","service":"discord-bot","timestamp":"2025-01-18 23:31:46"}
+{"level":"info","message":"Button Interaction Received: customId = upvote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-18 23:34:05"}
+{"level":"info","message":"Handler found for prefix: upvote_pups","service":"discord-bot","timestamp":"2025-01-18 23:34:05"}
+{"level":"info","message":"User 1155078877803192420 changed their vote to upvote on poll for user 1323540254522740777","service":"discord-bot","timestamp":"2025-01-18 23:34:07"}
+{"level":"error","message":"Error handling interaction: DiscordAPIError[10062]: Unknown interaction","service":"discord-bot","timestamp":"2025-01-18 23:34:08"}
+{"level":"info","message":"Button Interaction Received: customId = end_vote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-18 23:34:10"}
+{"level":"info","message":"Handler found for prefix: end_vote_pups","service":"discord-bot","timestamp":"2025-01-18 23:34:10"}
+{"level":"info","message":"Button Interaction Received: customId = view_votes_pups_143","service":"discord-bot","timestamp":"2025-01-18 23:34:20"}
+{"level":"warn","message":"No handler found for button with customId: view_votes_pups_143","service":"discord-bot","timestamp":"2025-01-18 23:34:20"}
+{"level":"error","message":"Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')","service":"discord-bot","timestamp":"2025-01-18 23:34:20"}
+{"level":"info","message":"Button Interaction Received: customId = view_votes_pups_144","service":"discord-bot","timestamp":"2025-01-18 23:35:11"}
+{"level":"warn","message":"No handler found for button with customId: view_votes_pups_144","service":"discord-bot","timestamp":"2025-01-18 23:35:11"}
+{"level":"error","message":"Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')","service":"discord-bot","timestamp":"2025-01-18 23:35:11"}
+{"level":"error","message":"Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')","service":"discord-bot","timestamp":"2025-01-18 23:38:16"}
+{"level":"error","message":"Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')","service":"discord-bot","timestamp":"2025-01-19 00:04:21"}
+{"level":"info","message":"Button Interaction Received: customId = upvote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:06:34"}
+{"level":"info","message":"Handler found for prefix: upvote_pups","service":"discord-bot","timestamp":"2025-01-19 00:06:34"}
+{"level":"info","message":"User 1155078877803192420 cast a upvote on poll for user 1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:06:37"}
+{"level":"info","message":"Button Interaction Received: customId = downvote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:06:49"}
+{"level":"info","message":"Handler found for prefix: downvote_pups","service":"discord-bot","timestamp":"2025-01-19 00:06:49"}
+{"level":"info","message":"User 1155078877803192420 changed their vote to downvote on poll for user 1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:06:53"}
+{"level":"info","message":"Button Interaction Received: customId = upvote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:07:13"}
+{"level":"info","message":"Handler found for prefix: upvote_pups","service":"discord-bot","timestamp":"2025-01-19 00:07:13"}
+{"level":"info","message":"User 1155078877803192420 changed their vote to upvote on poll for user 1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:07:16"}
+{"level":"info","message":"Button Interaction Received: customId = end_vote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:07:23"}
+{"level":"info","message":"Handler found for prefix: end_vote_pups","service":"discord-bot","timestamp":"2025-01-19 00:07:23"}
+{"level":"info","message":"Button Interaction Received: customId = upvote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:09:03"}
+{"level":"info","message":"Handler found for prefix: upvote_pups","service":"discord-bot","timestamp":"2025-01-19 00:09:03"}
+{"level":"info","message":"Button Interaction Received: customId = upvote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:09:08"}
+{"level":"info","message":"Handler found for prefix: upvote_pups","service":"discord-bot","timestamp":"2025-01-19 00:09:08"}
+{"level":"info","message":"Button Interaction Received: customId = upvote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:09:08"}
+{"level":"info","message":"Handler found for prefix: upvote_pups","service":"discord-bot","timestamp":"2025-01-19 00:09:08"}
+{"level":"info","message":"Button Interaction Received: customId = upvote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:15:04"}
+{"level":"info","message":"Handler found for prefix: upvote_pups","service":"discord-bot","timestamp":"2025-01-19 00:15:04"}
+{"level":"info","message":"Button Interaction Received: customId = downvote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:26:51"}
+{"level":"info","message":"Handler found for prefix: downvote_pups","service":"discord-bot","timestamp":"2025-01-19 00:26:51"}
+{"level":"info","message":"Button Interaction Received: customId = upvote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:27:04"}
+{"level":"info","message":"Handler found for prefix: upvote_pups","service":"discord-bot","timestamp":"2025-01-19 00:27:04"}
+{"level":"info","message":"User 1155078877803192420 cast a upvote on poll for user 1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:27:08"}
+{"level":"info","message":"Button Interaction Received: customId = downvote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:27:14"}
+{"level":"info","message":"Handler found for prefix: downvote_pups","service":"discord-bot","timestamp":"2025-01-19 00:27:14"}
+{"level":"info","message":"User 1155078877803192420 changed their vote to downvote on poll for user 1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:27:17"}
+{"level":"info","message":"Button Interaction Received: customId = upvote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:27:33"}
+{"level":"info","message":"Handler found for prefix: upvote_pups","service":"discord-bot","timestamp":"2025-01-19 00:27:33"}
+{"level":"info","message":"User 1155078877803192420 changed their vote to upvote on poll for user 1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:27:35"}
+{"level":"info","message":"Button Interaction Received: customId = end_vote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:27:39"}
+{"level":"info","message":"Handler found for prefix: end_vote_pups","service":"discord-bot","timestamp":"2025-01-19 00:27:39"}
+{"level":"info","message":"Button Interaction Received: customId = end_vote_pups_1323540254522740777","service":"discord-bot","timestamp":"2025-01-19 00:27:51"}
+{"level":"info","message":"Handler found for prefix: end_vote_pups","service":"discord-bot","timestamp":"2025-01-19 00:27:51"}
+{"level":"info","message":"Button Interaction Received: customId = add_to_pups_147","service":"discord-bot","timestamp":"2025-01-19 00:29:19"}
+{"level":"info","message":"Handler found for prefix: add_to_pups","service":"discord-bot","timestamp":"2025-01-19 00:29:19"}
+{"level":"error","message":"Error handling interaction: TypeError: Cannot read properties of undefined (reading 'getUser')","service":"discord-bot","timestamp":"2025-01-19 00:29:21"}

@@ -13,3 +13,12 @@
 {"level":"error","message":"Error handling interaction: DiscordAPIError[10062]: Unknown interaction","service":"discord-bot","timestamp":"2025-01-18 21:58:20"}
 {"level":"error","message":"Error handling interaction: TypeError: this.handleVoteButton is not a function","service":"discord-bot","timestamp":"2025-01-18 21:58:34"}
 {"level":"error","message":"Error handling interaction: TypeError: this.handleVoteButton is not a function","service":"discord-bot","timestamp":"2025-01-18 21:59:42"}
+{"level":"error","message":"Error handling interaction: DiscordAPIError[10062]: Unknown interaction","service":"discord-bot","timestamp":"2025-01-18 23:30:15"}
+{"level":"error","message":"Error handling interaction: DiscordAPIError[10062]: Unknown interaction","service":"discord-bot","timestamp":"2025-01-18 23:30:28"}
+{"level":"error","message":"Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')","service":"discord-bot","timestamp":"2025-01-18 23:31:46"}
+{"level":"error","message":"Error handling interaction: DiscordAPIError[10062]: Unknown interaction","service":"discord-bot","timestamp":"2025-01-18 23:34:08"}
+{"level":"error","message":"Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')","service":"discord-bot","timestamp":"2025-01-18 23:34:20"}
+{"level":"error","message":"Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')","service":"discord-bot","timestamp":"2025-01-18 23:35:11"}
+{"level":"error","message":"Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')","service":"discord-bot","timestamp":"2025-01-18 23:38:16"}
+{"level":"error","message":"Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')","service":"discord-bot","timestamp":"2025-01-19 00:04:21"}
+{"level":"error","message":"Error handling interaction: TypeError: Cannot read properties of undefined (reading 'getUser')","service":"discord-bot","timestamp":"2025-01-19 00:29:21"}

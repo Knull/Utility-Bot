@@ -97,7 +97,7 @@ for (const file of eventFiles) {
 client.login(config.token);
 
 // Handle Booster Functionality
-boosterHandler(client);
+// boosterHandler(client);
 
 // Catch uncaught exceptions and unhandled promise rejections
 const ownerId = config.ownerId; // Ensure ownerId is defined in config.js
