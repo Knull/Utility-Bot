@@ -1,37 +1,100 @@
 // events/interactionCreate.js
-const { Collection } = require('discord.js');
-const pagination = require('../utilities/pagination'); // If you have a pagination utility
-const { handleButtonInteraction } = require('../handlers/buttonHandler');
-const { handlePromoteCommand, handlePremiumList } = require('../handlers/premiumHandler');
+const { Events, InteractionResponseFlags } = require('discord.js');
+const fs = require('fs');
+const path = require('path');
+const buttonHandlers = require('../handlers/buttonHandlersRegistry');
+const logger = require('../utilities/logger'); // Ensure this logger is properly implemented
 
 module.exports = {
-    name: 'interactionCreate',
+    name: Events.InteractionCreate,
     async execute(interaction, client) {
-        if (interaction.isChatInputCommand()) {
-            const command = client.commands.get(interaction.commandName);
+        try {
+            if (interaction.isCommand()) {
+                const commandPath = `../commands/${interaction.commandName}.js`;
+                const fullCommandPath = path.resolve(__dirname, commandPath);
 
-            if (!command) return;
+                // Check if the command file exists
+                if (!fs.existsSync(fullCommandPath)) {
+                    logger.warn(`Command file not found: ${commandPath}`);
+                    return interaction.reply({
+                        content: 'This command does not exist.',
+                        flags: [InteractionResponseFlags.EPHEMERAL]
+                    });
+                }
 
-            try {
+                const command = require(fullCommandPath);
+
+                // Check if the command has an execute function
+                if (!command.execute) {
+                    logger.warn(`Execute function not found for command: ${interaction.commandName}`);
+                    return interaction.reply({
+                        content: 'This command is not implemented correctly.',
+                        flags: [InteractionResponseFlags.EPHEMERAL]
+                    });
+                }
+
                 await command.execute(interaction);
-            } catch (error) {
-                console.error(`Error executing ${interaction.commandName}:`, error);
-                await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-            }
-        } else if (interaction.isAutocomplete()) {
-            const command = client.commands.get(interaction.commandName);
+            } else if (interaction.isButton()) {
+                const customId = interaction.customId;
+                logger.info(`Button Interaction Received: customId = ${customId}`);
 
-            if (!command || !command.autocomplete) return;
+                // Iterate through registered prefixes to find a match
+                let handlerFound = false;
+                for (const [prefix, handler] of Object.entries(buttonHandlers)) {
+                    if (customId.startsWith(prefix)) {
+                        logger.info(`Handler found for prefix: ${prefix}`);
+                        await handler(interaction, customId); // Pass customId if needed
+                        handlerFound = true;
+                        break;
+                    }
+                }
 
-            try {
-                await command.autocomplete(interaction);
-            } catch (error) {
-                console.error(`Error handling autocomplete for ${interaction.commandName}:`, error);
-                await interaction.respond([{ name: 'Error fetching suggestions', value: 'none' }]);
+                if (!handlerFound) {
+                    logger.warn(`No handler found for button with customId: ${customId}`);
+                    // Optionally, you can choose not to reply as per your preference
+                    // To silently fail, you can do nothing or send a minimal ephemeral message
+                    // Here, we'll send an ephemeral message as a fallback
+                    return interaction.reply({ 
+                        content: 'No handler was found for this button.', 
+                        flags: [InteractionResponseFlags.EPHEMERAL] 
+                    });
+                }
+            } else if (interaction.isModalSubmit()) {
+                const customId = interaction.customId;
+                logger.info(`Modal Interaction Received: customId = ${customId}`);
+
+                // Similar prefix matching for modals if needed
+                let handlerFound = false;
+                for (const [prefix, handler] of Object.entries(buttonHandlers)) {
+                    if (customId.startsWith(prefix)) {
+                        logger.info(`Handler found for prefix: ${prefix}`);
+                        await handler(interaction, customId);
+                        handlerFound = true;
+                        break;
+                    }
+                }
+
+                if (!handlerFound) {
+                    logger.warn(`No handler found for modal with customId: ${customId}`);
+                    return interaction.reply({ 
+                        content: 'No handler was found for this modal.', 
+                        flags: [InteractionResponseFlags.EPHEMERAL] 
+                    });
+                }
             }
-        } else if (interaction.isButton()) {
-            await handleButtonInteraction(interaction, client);
+        } catch (error) {
+            logger.error(`Error handling interaction: ${error}`);
+            if (interaction.replied || interaction.deferred) {
+                await interaction.followUp({ 
+                    content: 'There was an error while executing this interaction!', 
+                    flags: [InteractionResponseFlags.EPHEMERAL] 
+                });
+            } else {
+                await interaction.reply({ 
+                    content: 'There was an error while executing this interaction!', 
+                    flags: [InteractionResponseFlags.EPHEMERAL] 
+                });
+            }
         }
-        // Handle other interaction types if necessary
     },
 };

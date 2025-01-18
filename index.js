@@ -2683,7 +2683,6 @@ client.on('interactionCreate', async interaction => {
         }
     }
 });
-config.premiumRoleId
 client.on('interactionCreate', async interaction => {
     if (!interaction.isButton()) return;
 

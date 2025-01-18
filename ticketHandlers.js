@@ -587,7 +587,7 @@ async function sendEmbed(channel, embed, components) {
       console.log(`Adding permissions for Admin in Staff Report/Partnership ticket`);
       overwrites.push({
         id: String(config.adminRoleId),
-        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+        deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
       });
     } else if (ticketType === 'Appeal') {
       console.log(`Setting permissions for Appeal ticket (Admin only)`);

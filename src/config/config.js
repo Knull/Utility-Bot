@@ -1,13 +1,13 @@
 module.exports = {
     // Existing configurations
-    ticketsChannelId: '1238583192047325234',
+    ticketsChannelId: '1323539939912192001',
     ticketsCategoryId: '1298187480222404618',
-    archivedTicketsCategoryId: '1298232195869184051',
+    archivedTicketsCategoryId: '1323539939912192001',
     staffRoleId: '1228653981010497601',
     logsChannelId: '1298232017653202984',
     adminRoleId: '1228653981048377373',
     guildId: '1228653980780072981',
-    clientId: '1298187047189745754',
+    clientId: '1323540254522740777',
     pupsManagerRoleId: '1244223177911963648',
     pupsRoleId: '1244223367435915265',
     pugsRoleId: '1228653980977205335',
@@ -35,8 +35,8 @@ module.exports = {
     archivedStoreTicketsCategoryId: '1305481698808434699',
 
     // Log channel IDs
-    ticketLogsChannelId1: '1228653985876021294', // For General, Appeal, Report tickets
-    ticketLogsChannelId2: '1299390184785182770', // For Staff Report, Partnership tickets
+    ticketLogsChannelId1: '1323539939912192001', // For General, Appeal, Report tickets
+    ticketLogsChannelId2: '1323539939912192001', // For Staff Report, Partnership tickets
     // staff role ids
     OwnerRoleId: '1228653981115355196',
     HeadDeveloperRoleId: '1228653981086257184',
@@ -55,4 +55,6 @@ module.exports = {
     // booster
     BoosterRoleId: '1243398569206222892',
     BoostsChannelId: '1306646686650732584',
+    pugsChannelId: '1323539892487196724',
+    pupsChannelId: '1323539939912192001',
 };

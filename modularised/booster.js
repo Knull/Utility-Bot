@@ -1,6 +1,6 @@
 // Import required modules and config
 const { Events, EmbedBuilder } = require('discord.js');
-const config = require('./config.js');
+const config = require('./config/config');
 
 // Function to send a boost thank-you message
 async function sendBoostMessage(member) {
@@ -44,10 +44,6 @@ module.exports = (client) => {
 
         if (oldMember.partial) await oldMember.fetch();
         if (newMember.partial) await newMember.fetch();
-
-        console.log('Guild member update detected');
-        console.log('Old roles:', oldMember.roles.cache.map(role => role.id));
-        console.log('New roles:', newMember.roles.cache.map(role => role.id));
 
         if (!oldMember.roles.cache.has(boostRoleId) && newMember.roles.cache.has(boostRoleId)) {
             console.log('Booster role added, sending message...');

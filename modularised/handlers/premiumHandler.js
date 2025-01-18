@@ -64,20 +64,19 @@ async function addPremiumRole(interaction, member, user) {
         console.log(`Added Premium role to user ${user.id}`);
 
         const embed = new EmbedBuilder()
-            .setDescription(`Added <@${user.id}> to <@&${premiumRole.id}>.`)
+            .setDescription(`> Added <@${user.id}> to <@&${premiumRole.id}>.`)
             .setColor('#c79504'); // Gold color for success
 
         await interaction.reply({ embeds: [embed], ephemeral: false });
 
         // Send announcement to premium-announcements channel
-        const announcementChannel = interaction.guild.channels.cache.find(ch => ch.name === 'premium-announcements');
+        const announcementChannel = interaction.guild.channels.cache.find(ch => ch.id === config.premiumChannelId);
         if (announcementChannel) {
             const announcementEmbed = new EmbedBuilder()
                 .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
                 .setTitle("Premium Addition")
-                .setDescription(`<@${user.id}> has been added to <@&${premiumRole.id}>`)
+                .setDescription(`> <@${user.id}> has been added to <@&${premiumRole.id}>`)
                 .addFields({ name: 'Added by:', value: `<@${interaction.user.id}>` })
-                .setTimestamp()
                 .setColor('#c79504');
 
             await announcementChannel.send({ embeds: [announcementEmbed] });
@@ -113,20 +112,19 @@ async function removePremiumRole(interaction, member, user) {
         console.log(`Removed Premium role from user ${user.id}`);
 
         const embed = new EmbedBuilder()
-            .setDescription(`Removed <@${user.id}> from <@&${premiumRole.id}>.`)
+            .setDescription(`> Removed <@${user.id}> from <@&${premiumRole.id}>.`)
             .setColor('#c79504'); // Gold color for success
 
         await interaction.reply({ embeds: [embed], ephemeral: false });
 
         // Send announcement to premium-announcements channel
-        const announcementChannel = interaction.guild.channels.cache.find(ch => ch.name === 'premium-announcements');
+        const announcementChannel = interaction.guild.channels.cache.find(ch => ch.id === config.premiumChannelId);
         if (announcementChannel) {
             const announcementEmbed = new EmbedBuilder()
                 .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
                 .setTitle("Premium Removal")
-                .setDescription(`<@${user.id}> has been removed from <@&${premiumRole.id}>`)
+                .setDescription(`> <@${user.id}> has been removed from <@&${premiumRole.id}>`)
                 .addFields({ name: 'Removed by:', value: `<@${interaction.user.id}>` })
-                .setTimestamp()
                 .setColor('#c79504');
 
             await announcementChannel.send({ embeds: [announcementEmbed] });

@@ -1,6 +1,7 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Collection } = require('discord.js');
+// commands/staffList.js
+const { SlashCommandBuilder } = require('discord.js');
 const config = require('../config/config');
-const { handleStaffListCommand, handlePagination, getPageEmbed, getPaginationButtons } = require('../utilities/pagination');
+const { handleStaffListCommand } = require('../handlers/staffListHandler');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -16,6 +17,7 @@ module.exports = {
                     { name: 'Manager', value: 'manager' },
                     { name: 'Developer', value: 'developer' },
                     { name: 'Designer', value: 'designer' },
+                    { name: 'Sr. Admin', value: 'sr-admin' }, // Added Sr. Admin
                     { name: 'Admin', value: 'admin' },
                     { name: 'Mod', value: 'mod' },
                     { name: 'Helper', value: 'helper' },

@@ -19,7 +19,7 @@ async function sendBoostMessage(member) {
             name: 'Thanks for Boosting PRBW!',
             iconURL: heartIconURL // Use the role icon URL as the icon
         })
-        .setDescription(`<@&${config.BoosterRoleId}> **Perks**:\n- **VC Bypass**: You can join full VCs now!\n- **A Custom Role**: You may request a custom role!\n- \`=claimelo\`: A small token of our gratitude.\n- **Exclusive Giveaways**: Giveaways just for you!`)
+        .setDescription(`<@&${config.BoosterRoleId}> **Perks**:\n- **VC Bypass**: You can join any Game VC now!\n- **A Custom Role**: You may request a custom role!\n- \`=claimelo\`: A small token of our gratitude.\n- **Exclusive Giveaways**: Giveaways just for you!`)
         .setFooter({
             text: `${member.user.username}`, // Use member's username
             iconURL: member.user.displayAvatarURL() // Use member's avatar as the footer icon

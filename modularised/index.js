@@ -5,7 +5,6 @@ const { Routes } = require('discord-api-types/v10');
 const fs = require('fs');
 const path = require('path');
 const config = require('./config/config');
-const { setupTicketSystem } = require('./ticketHandlers.js');
 const boosterHandler = require('./booster.js');
 const mysql = require('mysql2/promise');
 
