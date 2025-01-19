@@ -1,1 +1,3 @@
 2025-01-19 22:40:53 [ERROR] Original voting result message not found.
+2025-01-19 22:51:24 [ERROR] Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')
+2025-01-19 23:00:20 [ERROR] Error removing PUPS role: channel is not defined handlers\voting\pupsVoteHandler.js:1205

@@ -1112,16 +1112,16 @@ const handleAdd = async (interaction) => {
         await interaction.editReply({ embeds: [addedEmbed] });
 
         // Removed the automatic announcement embed
-        // const announcementEmbed = new EmbedBuilder()
-        //     .setAuthor({ name: member.user.username, iconURL: member.user.displayAvatarURL() })
-        //     .setTitle('PUPS Addition')
-        //     .setDescription(`> <@${user.id}> has been added to <@&${config.pupsRoleId}>\n**Added By:** <@${interaction.user.id}>.`)
-        //     .setColor('#00FF00')
-        //     .setTimestamp();
+         const announcementEmbed = new EmbedBuilder()
+             .setAuthor({ name: member.user.username, iconURL: member.user.displayAvatarURL() })
+             .setTitle('PUPS Addition')
+             .setDescription(`> <@${user.id}> has been added to <@&${config.pupsRoleId}>\n**Added By:** <@${interaction.user.id}>.`)
+             .setColor('#00FF00')
+             .setTimestamp();
 
-        // await channel.send({ embeds: [announcementEmbed] }).then(sentMessage => {
-        //     sentMessage.react('🔥'); // Fire emoji for addition
-        // });
+         await channel.send({ embeds: [announcementEmbed] }).then(sentMessage => {
+             sentMessage.react('🔥'); // Fire emoji for addition
+         });
 
         // Optionally, you can log or perform other actions here
 
@@ -1144,6 +1144,7 @@ const handleRemove = async (interaction) => {
     await interaction.deferReply({ ephemeral: true }); // Changed from flags: InteractionResponseFlags.EPHEMERAL
 
     const user = interaction.options.getUser('user');
+    const channel = interaction.guild.channels.cache.get(config.pupsChannelId);
 
     if (!user) {
         const embed = new EmbedBuilder()
@@ -1195,17 +1196,16 @@ const handleRemove = async (interaction) => {
             .setColor(pupsRole.color || 0xFF0000); // Default to red if role has no color
         await interaction.editReply({ embeds: [removedEmbed] });
 
-        // Removed the automatic announcement embed
-        // const announcementEmbed = new EmbedBuilder()
-        //     .setAuthor({ name: member.user.username, iconURL: member.user.displayAvatarURL() })
-        //     .setTitle('PUPS Removal')
-        //     .setDescription(`> <@${user.id}> has been removed from <@&${config.pupsRoleId}>.\n- **Removed by:** <@${interaction.user.id}>`)
-        //     .setColor(pupsRole.color || 0xFF0000) // Same as role color
-        //     .setTimestamp();
+        const announcementEmbed = new EmbedBuilder()
+            .setAuthor({ name: member.user.username, iconURL: member.user.displayAvatarURL() })
+            .setTitle('PUPS Removal')
+            .setDescription(`> <@${user.id}> has been removed from <@&${config.pupsRoleId}>.\n- **Removed by:** <@${interaction.user.id}>`)
+            .setColor(pupsRole.color || 0xFF0000) // Same as role color
+            .setTimestamp();
 
-        // await channel.send({ embeds: [announcementEmbed] }).then(sentMessage => {
-        //     sentMessage.react('💔'); // Heartbreak emoji for removal
-        // });
+         await channel.send({ embeds: [announcementEmbed] }).then(sentMessage => {
+             sentMessage.react('💔'); // Heartbreak emoji for removal
+         });
 
     } catch (error) {
         logger.error('Error removing PUPS role:', error);

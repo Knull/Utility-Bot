@@ -6,3 +6,26 @@
 2025-01-19 22:40:51 [INFO] Button Interaction Received: customId = add_to_pups_151
 2025-01-19 22:40:51 [INFO] Handler found for prefix: add_to_pups
 2025-01-19 22:40:53 [ERROR] Original voting result message not found.
+2025-01-19 22:47:44 [INFO] Button Interaction Received: customId = upvote_pups_1155078877803192420
+2025-01-19 22:47:44 [INFO] Handler found for prefix: upvote_pups
+2025-01-19 22:48:49 [INFO] Button Interaction Received: customId = upvote_pups_1155078877803192420
+2025-01-19 22:48:49 [INFO] Handler found for prefix: upvote_pups
+2025-01-19 22:48:52 [INFO] User 454927000490999809 cast a upvote on poll for user 1155078877803192420
+2025-01-19 22:49:19 [INFO] Button Interaction Received: customId = end_vote_pups_1155078877803192420
+2025-01-19 22:49:19 [INFO] Handler found for prefix: end_vote_pups
+2025-01-19 22:49:29 [INFO] Button Interaction Received: customId = add_to_pups_152
+2025-01-19 22:49:29 [INFO] Handler found for prefix: add_to_pups
+2025-01-19 22:51:09 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_0
+2025-01-19 22:51:09 [INFO] Handler found for prefix: next_list_pups
+2025-01-19 22:51:11 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 2/5
+2025-01-19 22:51:24 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-19 22:51:24 [WARN] No handler found for button with customId: view_votes_pups_152
+2025-01-19 22:51:24 [ERROR] Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')
+2025-01-19 22:58:22 [INFO] Button Interaction Received: customId = upvote_pups_1298187047189745754
+2025-01-19 22:58:22 [INFO] Handler found for prefix: upvote_pups
+2025-01-19 22:58:25 [INFO] User 1155078877803192420 cast a upvote on poll for user 1298187047189745754
+2025-01-19 22:58:30 [INFO] Button Interaction Received: customId = end_vote_pups_1298187047189745754
+2025-01-19 22:58:30 [INFO] Handler found for prefix: end_vote_pups
+2025-01-19 22:58:36 [INFO] Button Interaction Received: customId = add_to_pups_153
+2025-01-19 22:58:36 [INFO] Handler found for prefix: add_to_pups
+2025-01-19 23:00:20 [ERROR] Error removing PUPS role: channel is not defined handlers\voting\pupsVoteHandler.js:1205
