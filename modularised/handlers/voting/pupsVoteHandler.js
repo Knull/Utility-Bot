@@ -30,7 +30,7 @@ const votingAllowedRoles = [
  * @param {CommandInteraction} interaction 
  */
 const handleVote = async (interaction) => {
-    await interaction.deferReply({ ephemeral: true }); // Changed from flags: InteractionResponseFlags.EPHEMERAL
+    await interaction.deferReply({ ephemeral: true });
 
     try {
         const user = interaction.options.getUser('user');
@@ -46,7 +46,6 @@ const handleVote = async (interaction) => {
                 .setColor(0x980e00)
                 .setTimestamp();
 
-            // Edit the deferred reply
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -61,7 +60,12 @@ const handleVote = async (interaction) => {
         }
 
         // Create new poll
-        await pool.execute('INSERT INTO polls (user_id, type, upvotes, downvotes, active, created_at) VALUES (?, "pups", 0, 0, 1, NOW())', [user.id]);
+        const [result] = await pool.execute(
+            'INSERT INTO polls (user_id, type, upvotes, downvotes, active, created_at) VALUES (?, "pups", 0, 0, 1, NOW())',
+            [user.id]
+        );
+
+        const pollId = result.insertId; // Assuming 'id' is the primary key with AUTO_INCREMENT
 
         const embed = new EmbedBuilder()
             .setAuthor({ name: `${user.username} | PUPS Vote`, iconURL: user.displayAvatarURL() })
@@ -103,7 +107,10 @@ const handleVote = async (interaction) => {
             return interaction.editReply({ embeds: [errorEmbed] });
         }
 
-        await channel.send({ content: `<@&${config.pupsRoleId}>`, embeds: [embed], components: [buttons] });
+        const sentMessage = await channel.send({ content: `<@&${config.pupsRoleId}>`, embeds: [embed], components: [buttons] });
+
+        // Update the poll record with the message_id
+        await pool.execute('UPDATE polls SET message_id = ? WHERE id = ?', [sentMessage.id, pollId]);
 
         const successEmbed = new EmbedBuilder()
             .setDescription('Vote created successfully.')
@@ -238,17 +245,23 @@ const handleVoteButton = async (interaction, voteType) => {
                     }
 
                     // Fetch the original message to update
-                    const fetchedMessages = await channel.messages.fetch({ limit: 100 });
-                    const targetMember = interaction.guild.members.cache.get(targetUserId);
-                    if (!targetMember) {
+                    let targetMember;
+                    try {
+                        targetMember = await interaction.guild.members.fetch(targetUserId);
+                    } catch (err) {
+                        targetMember = null;
                         logger.error(`Target member with ID ${targetUserId} not found.`);
-                        const errorEmbed = new EmbedBuilder()
+                    }
+
+                    if (!targetMember) {
+                        const embed = new EmbedBuilder()
                             .setDescription('Target member not found.')
                             .setColor(0x980e00)
                             .setTimestamp();
-                        return interaction.editReply({ embeds: [errorEmbed] });
+                        return interaction.editReply({ embeds: [embed] });
                     }
 
+                    const fetchedMessages = await channel.messages.fetch({ limit: 100 });
                     const message = fetchedMessages.find(msg => 
                         msg.embeds.length > 0 && 
                         msg.embeds[0].author && 
@@ -257,11 +270,11 @@ const handleVoteButton = async (interaction, voteType) => {
 
                     if (!message) {
                         logger.error('Original voting message not found.');
-                        const errorEmbed = new EmbedBuilder()
+                        const embed = new EmbedBuilder()
                             .setDescription('Original voting message not found.')
                             .setColor(0x980e00)
                             .setTimestamp();
-                        return interaction.editReply({ embeds: [errorEmbed] });
+                        return interaction.editReply({ embeds: [embed] });
                     }
 
                     const embed = EmbedBuilder.from(message.embeds[0])
@@ -275,7 +288,7 @@ const handleVoteButton = async (interaction, voteType) => {
                     await message.edit({ embeds: [embed] });
 
                     const replyEmbed = new EmbedBuilder()
-                        .setDescription(`Your vote has been changed to **${voteType}**.`)
+                        .setDescription(`You have cast a **${voteType}**.`)
                         .setColor(0xe96d6d)
                         .setTimestamp();
 
@@ -330,17 +343,23 @@ const handleVoteButton = async (interaction, voteType) => {
                 }
 
                 // Fetch the original message to update
-                const fetchedMessages = await channel.messages.fetch({ limit: 100 });
-                const targetMember = interaction.guild.members.cache.get(targetUserId);
-                if (!targetMember) {
+                let targetMember;
+                try {
+                    targetMember = await interaction.guild.members.fetch(targetUserId);
+                } catch (err) {
+                    targetMember = null;
                     logger.error(`Target member with ID ${targetUserId} not found.`);
-                    const errorEmbed = new EmbedBuilder()
+                }
+
+                if (!targetMember) {
+                    const embed = new EmbedBuilder()
                         .setDescription('Target member not found.')
                         .setColor(0x980e00)
                         .setTimestamp();
-                    return interaction.editReply({ embeds: [errorEmbed] });
+                    return interaction.editReply({ embeds: [embed] });
                 }
 
+                const fetchedMessages = await channel.messages.fetch({ limit: 100 });
                 const message = fetchedMessages.find(msg => 
                     msg.embeds.length > 0 && 
                     msg.embeds[0].author && 
@@ -349,11 +368,11 @@ const handleVoteButton = async (interaction, voteType) => {
 
                 if (!message) {
                     logger.error('Original voting message not found.');
-                    const errorEmbed = new EmbedBuilder()
+                    const embed = new EmbedBuilder()
                         .setDescription('Original voting message not found.')
                         .setColor(0x980e00)
                         .setTimestamp();
-                    return interaction.editReply({ embeds: [errorEmbed] });
+                    return interaction.editReply({ embeds: [embed] });
                 }
 
                 const embed = EmbedBuilder.from(message.embeds[0])
@@ -384,7 +403,7 @@ const handleVoteButton = async (interaction, voteType) => {
     } catch (error) {
         logger.error('Error handling vote button interaction:', error);
         const embed = new EmbedBuilder()
-            .setDescription('An unexpected error occurred.')
+            .setDescription('An unexpected error occurred while processing your vote.')
             .setColor(0x980e00)
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
@@ -512,10 +531,15 @@ const handleEndVote = async (interaction) => {
             return interaction.editReply({ embeds: [embed] });
         }
 
-        const fetchedMessages = await channel.messages.fetch({ limit: 100 });
-        const targetMember = interaction.guild.members.cache.get(targetUserId);
-        if (!targetMember) {
+        let targetMember;
+        try {
+            targetMember = await interaction.guild.members.fetch(targetUserId);
+        } catch (err) {
+            targetMember = null;
             logger.error(`Target member with ID ${targetUserId} not found.`);
+        }
+
+        if (!targetMember) {
             const embed = new EmbedBuilder()
                 .setDescription('Target member not found.')
                 .setColor(0x980e00)
@@ -523,6 +547,7 @@ const handleEndVote = async (interaction) => {
             return interaction.editReply({ embeds: [embed] });
         }
 
+        const fetchedMessages = await channel.messages.fetch({ limit: 100 });
         const message = fetchedMessages.find(msg => 
             msg.embeds.length > 0 && 
             msg.embeds[0].author && 
@@ -580,16 +605,30 @@ const handleEndVote = async (interaction) => {
                 );
             }
 
-            await interaction.editReply({ embeds: [resultEmbed], components: [actionButtons] });
-
-            // Create an announcement embed          
-
-            const followUpEmbed = new EmbedBuilder()
-                .setDescription('Vote ended successfully.')
-                .setColor(0xe96d6d)
+            // Send an ephemeral reply to the manager with the vote results and "Add to Pups" button
+            const managerEmbed = new EmbedBuilder()
+                .setAuthor({ name: `${targetMember.user.username} | PUPS Vote Results`, iconURL: targetMember.user.displayAvatarURL() })
+                .setDescription(`**Upvotes 👍:** \`\`\`${upvotes}\`\`\`\n**Downvotes 💔:** \`\`\`${downvotes}\`\`\`\n<@${targetUserId}> has **${voteWon ? 'won' : 'lost'}** the vote.`)
+                .setColor(resultColor)
+                .setFooter({ text: `Created by ${message.embeds[0].footer.text.replace('Created by ', '')}`, iconURL: message.embeds[0].footer.iconURL })
                 .setTimestamp();
 
-            await interaction.followUp({ embeds: [followUpEmbed], ephemeral: true }); // Changed to ephemeral: true
+            let managerButtons;
+            if (voteWon) {
+                managerButtons = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`add_to_pups_${poll.id}`)
+                        .setLabel('Add to Pups')
+                        .setStyle(ButtonStyle.Primary)
+                        .setEmoji('✅') // Checkmark emoji
+                );
+            } else {
+                // No button if vote lost
+                managerButtons = new ActionRowBuilder(); // Empty ActionRow
+            }
+
+            await interaction.editReply({ embeds: [resultEmbed], components: [actionButtons] });
+            await interaction.followUp({ embeds: [managerEmbed], components: [managerButtons], ephemeral: true });
         } catch (error) {
             logger.error(`Error handling end_vote interaction: ${error}`);
             const embed = new EmbedBuilder()
@@ -601,7 +640,7 @@ const handleEndVote = async (interaction) => {
     } catch (error) {
         logger.error('Error handling End Vote:', error);
         const embed = new EmbedBuilder()
-            .setDescription('An unexpected error occurred while ending the vote.')
+            .setDescription('An error occurred while ending the vote.')
             .setColor(0x980e00)
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
@@ -662,10 +701,18 @@ const handleViewVotes = async (interaction) => {
         const upvoteMentions = upvoters.map(v => `<@${v.user_id}>`).join('\n') || 'No upvotes yet.';
         const downvoteMentions = downvoters.map(v => `<@${v.user_id}>`).join('\n') || 'No downvotes yet.';
 
+        let pollUser;
+        try {
+            pollUser = await interaction.guild.members.fetch(poll.user_id);
+        } catch (err) {
+            pollUser = null;
+            logger.error(`Poll user with ID ${poll.user_id} not found.`);
+        }
+
         const embed = new EmbedBuilder()
             .setAuthor({ 
-                name: `${interaction.guild.members.cache.get(poll.user_id)?.user.username || 'User'} | PUPS Vote Results`, 
-                iconURL: interaction.guild.members.cache.get(poll.user_id)?.user.displayAvatarURL() || interaction.guild.iconURL() 
+                name: pollUser?.user.username || 'User', 
+                iconURL: pollUser?.user.displayAvatarURL() || interaction.guild.iconURL() 
             })
             .addFields(
                 { name: 'Upvotes 👍', value: upvoteMentions, inline: true },
@@ -690,8 +737,7 @@ const handleViewVotes = async (interaction) => {
  * @param {CommandInteraction} interaction 
  */
 const handleCreate = async (interaction) => {
-    // Defer the reply to extend the timeout
-    await interaction.deferReply({ ephemeral: true }); // Changed from flags: InteractionResponseFlags.EPHEMERAL
+    await interaction.deferReply({ ephemeral: true });
 
     const user = interaction.user;
     const member = interaction.member;
@@ -721,7 +767,14 @@ const handleCreate = async (interaction) => {
         }
 
         // Check if the user is already PUGS or PREMIUM
-        const memberData = await interaction.guild.members.fetch(user.id);
+        let memberData;
+        try {
+            memberData = await interaction.guild.members.fetch(user.id);
+        } catch (err) {
+            memberData = null;
+            logger.error(`Member data for user ID ${user.id} not found.`);
+        }
+
         if (!memberData) {
             const embed = new EmbedBuilder()
                 .setDescription('Member data not found.')
@@ -742,7 +795,12 @@ const handleCreate = async (interaction) => {
         }
 
         // Create new poll
-        await pool.execute('INSERT INTO polls (user_id, type, upvotes, downvotes, active, created_at) VALUES (?, "pups", 0, 0, 1, NOW())', [user.id]);
+        const [result] = await pool.execute(
+            'INSERT INTO polls (user_id, type, upvotes, downvotes, active, created_at) VALUES (?, "pups", 0, 0, 1, NOW())',
+            [user.id]
+        );
+
+        const pollId = result.insertId;
 
         const embed = new EmbedBuilder()
             .setAuthor({ name: `${user.username} | PUPS Vote`, iconURL: user.displayAvatarURL() })
@@ -784,7 +842,10 @@ const handleCreate = async (interaction) => {
             return interaction.editReply({ embeds: [errorEmbed] });
         }
 
-        await channel.send({ content: `<@&${config.pupsRoleId}>`, embeds: [embed], components: [buttons] });
+        const sentMessage = await channel.send({ content: `<@&${config.pupsRoleId}>`, embeds: [embed], components: [buttons] });
+
+        // Update the poll record with the message_id
+        await pool.execute('UPDATE polls SET message_id = ? WHERE id = ?', [sentMessage.id, pollId]);
 
         const successEmbed = new EmbedBuilder()
             .setDescription('Your PUPS vote has been created successfully.')
@@ -1050,26 +1111,20 @@ const handleAdd = async (interaction) => {
             .setColor(pupsRole.color || 0x00FF00); // Default to green if role has no color
         await interaction.editReply({ embeds: [addedEmbed] });
 
-        // Create announcement embed
-        const announcementEmbed = new EmbedBuilder()
-            .setAuthor({ 
-                name: member.user.username, 
-                iconURL: member.user.displayAvatarURL() 
-            })
-            .setTitle('PUPS Addition')
-            .setDescription(
-                `> <@${user.id}> has been added to <@&${config.pupsRoleId}>.\n- **Added by:** <@${interaction.user.id}>`
-            )
-            .setColor(pupsRole.color || 0x00FF00) // Same as role color
-            .setTimestamp();
+        // Removed the automatic announcement embed
+        // const announcementEmbed = new EmbedBuilder()
+        //     .setAuthor({ name: member.user.username, iconURL: member.user.displayAvatarURL() })
+        //     .setTitle('PUPS Addition')
+        //     .setDescription(`> <@${user.id}> has been added to <@&${config.pupsRoleId}>\n**Added By:** <@${interaction.user.id}>.`)
+        //     .setColor('#00FF00')
+        //     .setTimestamp();
 
-        const pupsChannel = interaction.guild.channels.cache.get(config.pupsChannelId);
-        if (pupsChannel) {
-            const sentMessage = await pupsChannel.send({ embeds: [announcementEmbed] });
-            await sentMessage.react('🔥'); // Fire emoji for addition
-        } else {
-            logger.error(`PUPS Channel with ID ${config.pupsChannelId} not found.`);
-        }
+        // await channel.send({ embeds: [announcementEmbed] }).then(sentMessage => {
+        //     sentMessage.react('🔥'); // Fire emoji for addition
+        // });
+
+        // Optionally, you can log or perform other actions here
+
     } catch (error) {
         logger.error('Error adding PUPS role:', error);
         const embed = new EmbedBuilder()
@@ -1140,26 +1195,18 @@ const handleRemove = async (interaction) => {
             .setColor(pupsRole.color || 0xFF0000); // Default to red if role has no color
         await interaction.editReply({ embeds: [removedEmbed] });
 
-        // Create announcement embed
-        const announcementEmbed = new EmbedBuilder()
-            .setAuthor({ 
-                name: member.user.username, 
-                iconURL: member.user.displayAvatarURL() 
-            })
-            .setTitle('PUPS Removal')
-            .setDescription(
-                `> <@${user.id}> has been removed from <@&${config.pupsRoleId}>.\n- **Removed by:** <@${interaction.user.id}>`
-            )
-            .setColor(pupsRole.color || 0xFF0000) // Same as role color
-            .setTimestamp();
+        // Removed the automatic announcement embed
+        // const announcementEmbed = new EmbedBuilder()
+        //     .setAuthor({ name: member.user.username, iconURL: member.user.displayAvatarURL() })
+        //     .setTitle('PUPS Removal')
+        //     .setDescription(`> <@${user.id}> has been removed from <@&${config.pupsRoleId}>.\n- **Removed by:** <@${interaction.user.id}>`)
+        //     .setColor(pupsRole.color || 0xFF0000) // Same as role color
+        //     .setTimestamp();
 
-        const pupsChannel = interaction.guild.channels.cache.get(config.pupsChannelId);
-        if (pupsChannel) {
-            const sentMessage = await pupsChannel.send({ embeds: [announcementEmbed] });
-            await sentMessage.react('💔'); // Heartbreak emoji for removal
-        } else {
-            logger.error(`PUPS Channel with ID ${config.pupsChannelId} not found.`);
-        }
+        // await channel.send({ embeds: [announcementEmbed] }).then(sentMessage => {
+        //     sentMessage.react('💔'); // Heartbreak emoji for removal
+        // });
+
     } catch (error) {
         logger.error('Error removing PUPS role:', error);
         const embed = new EmbedBuilder()
@@ -1194,6 +1241,14 @@ const handleMyVote = async (interaction) => {
         const poll = polls[currentPage];
         const status = poll.active ? 'active' : 'inactive';
         const user = interaction.user;
+
+        let pollUser;
+        try {
+            pollUser = await interaction.guild.members.fetch(poll.user_id);
+        } catch (err) {
+            pollUser = null;
+            logger.error(`Poll user with ID ${poll.user_id} not found.`);
+        }
 
         const pollEmbed = new EmbedBuilder()
             .setAuthor({ name: `${user.username} | PUPS Vote`, iconURL: user.displayAvatarURL() })
@@ -1240,12 +1295,12 @@ const handleMyVote = async (interaction) => {
  * @param {ButtonInteraction} interaction 
  */
 const handleAddToPups = async (interaction) => {
-    await interaction.deferReply({ ephemeral: true }); // Changed from flags: InteractionResponseFlags.EPHEMERAL
+    await interaction.deferReply({ ephemeral: true });
 
-    const customId = interaction.customId; // e.g., 'add_to_pups_123'
+    const customId = interaction.customId; // e.g., 'add_to_pups_151'
     const parts = customId.split('_');
 
-    if (parts.length < 4) {
+    if (parts.length < 4) { // 'add_to_pups_<pollId>'
         logger.warn(`Invalid customId for add to pups: ${customId}`);
         const embed = new EmbedBuilder()
             .setDescription('Invalid interaction.')
@@ -1302,7 +1357,17 @@ const handleAddToPups = async (interaction) => {
 
         await member.roles.add(pupsRole);
 
-        // Update the original embed to reflect the addition
+        // Fetch the original voting result message using message_id
+        const messageId = poll.message_id;
+        if (!messageId) {
+            logger.error(`Poll with ID ${poll.id} does not have a message_id.`);
+            const embed = new EmbedBuilder()
+                .setDescription('Original voting message ID not found in the database.')
+                .setColor(0x980e00)
+                .setTimestamp();
+            return interaction.editReply({ embeds: [embed] });
+        }
+
         const channel = interaction.guild.channels.cache.get(config.pupsChannelId);
         if (!channel) {
             logger.error(`PUPS Channel with ID ${config.pupsChannelId} not found.`);
@@ -1313,27 +1378,13 @@ const handleAddToPups = async (interaction) => {
             return interaction.editReply({ embeds: [embed] });
         }
 
-        const fetchedMessages = await channel.messages.fetch({ limit: 100 });
-        const targetMember = interaction.guild.members.cache.get(userId);
-        if (!targetMember) {
-            logger.error(`Target member with ID ${userId} not found.`);
+        let message;
+        try {
+            message = await channel.messages.fetch(messageId);
+        } catch (err) {
+            logger.error(`Could not fetch message with ID ${messageId}:`, err);
             const embed = new EmbedBuilder()
-                .setDescription('Target member not found.')
-                .setColor(0x980e00)
-                .setTimestamp();
-            return interaction.editReply({ embeds: [embed] });
-        }
-
-        const message = fetchedMessages.find(msg => 
-            msg.embeds.length > 0 && 
-            msg.embeds[0].author && 
-            msg.embeds[0].author.name === `${targetMember.user.username} | PUPS Vote Results`
-        );
-
-        if (!message) {
-            logger.error('Original voting result message not found.');
-            const embed = new EmbedBuilder()
-                .setDescription('Original voting result message not found.')
+                .setDescription('Original voting message not found in the channel.')
                 .setColor(0x980e00)
                 .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
@@ -1364,17 +1415,6 @@ const handleAddToPups = async (interaction) => {
             .setTimestamp();
         await interaction.editReply({ embeds: [confirmationEmbed] });
 
-        // Optionally, send an additional announcement
-        const announcementEmbed = new EmbedBuilder()
-            .setAuthor({ name: targetMember.user.username, iconURL: targetMember.user.displayAvatarURL() })
-            .setTitle('PUPS Addition Confirmed')
-            .setDescription(`<@${userId}> has been officially added to <@&${config.pupsRoleId}> by <@${interaction.user.id}>.`)
-            .setColor('#00FF00')
-            .setTimestamp();
-
-        await channel.send({ embeds: [announcementEmbed] }).then(sentMessage => {
-            sentMessage.react('🔥'); // Fire emoji for addition
-        });
     } catch (error) {
         logger.error('Error adding PUPS role via Add to Pups button:', error);
         const embed = new EmbedBuilder()

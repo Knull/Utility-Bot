@@ -38,7 +38,7 @@ const buttonHandlers = {
     'upvote_pups': pupsVoteHandler.handleUpvote,
     'downvote_pups': pupsVoteHandler.handleDownvote,
     'end_vote_pups': pupsVoteHandler.handleEndVote,
-    'add_to_pups': pupsVoteHandler.handleAdd, // Corrected from handleAddToPups
+    'add_to_pups': pupsVoteHandler.handleAddToPupsButton, // Corrected from handleAddToPups
     'next_list_pups': pupsVoteHandler.handlePagination,
     'prev_list_pups': pupsVoteHandler.handlePagination,
 
