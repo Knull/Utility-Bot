@@ -1357,7 +1357,7 @@ const handleAddToPups = async (interaction) => {
 
         await member.roles.add(pupsRole);
 
-        // Fetch the original voting result message using message_id
+        // Fetch the original voting message using message_id
         const messageId = poll.message_id;
         if (!messageId) {
             logger.error(`Poll with ID ${poll.id} does not have a message_id.`);
@@ -1378,9 +1378,9 @@ const handleAddToPups = async (interaction) => {
             return interaction.editReply({ embeds: [embed] });
         }
 
-        let message;
+        let originalMessage;
         try {
-            message = await channel.messages.fetch(messageId);
+            originalMessage = await channel.messages.fetch(messageId);
         } catch (err) {
             logger.error(`Could not fetch message with ID ${messageId}:`, err);
             const embed = new EmbedBuilder()
@@ -1390,25 +1390,24 @@ const handleAddToPups = async (interaction) => {
             return interaction.editReply({ embeds: [embed] });
         }
 
-        // Update the embed to indicate the user has been added to Pups
-        const updatedEmbed = EmbedBuilder.from(message.embeds[0])
-            .setDescription(`${message.embeds[0].description}\n\n<@${userId}> has been **added to PUPS**.`)
-            .setColor('#00FF00') // Green color to indicate success
+        // Prepare the new embed
+        const additionEmbed = new EmbedBuilder()
+            .setAuthor({ name: `${member.user.username}`, iconURL: member.user.displayAvatarURL() })
+            .setTitle('PUPS Addition')
+            .setDescription(`> <@${userId}> has been added to <@&${config.pupsRoleId}>.\n- **Added By:** <@${interaction.user.id}>`)
+            .setColor('#e96d6d') 
             .setTimestamp();
 
-        // Remove the "Add to Pups" button after addition
-        const disabledAddButton = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId(`add_to_pups_${poll.id}`)
-                .setLabel('Add to Pups')
-                .setStyle(ButtonStyle.Primary)
-                .setEmoji('✅') // Checkmark emoji
-                .setDisabled(true)
-        );
+        // Send the new message as a reply to the original vote message
+        const sentAdditionMessage = await channel.send({
+            embeds: [additionEmbed],
+            reply: { messageReference: originalMessage.id }
+        });
 
-        await message.edit({ embeds: [updatedEmbed], components: [disabledAddButton] });
+        // React to the new message with fire emoji
+        await sentAdditionMessage.react('🔥');
 
-        // Send a confirmation embed
+        // Send a confirmation to the user who clicked the button
         const confirmationEmbed = new EmbedBuilder()
             .setDescription(`> <@${userId}> has been successfully added to <@&${config.pupsRoleId}>.`)
             .setColor(0x00FF00)
