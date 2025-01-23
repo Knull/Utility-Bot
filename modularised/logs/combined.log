@@ -29,3 +29,113 @@
 2025-01-19 22:58:36 [INFO] Button Interaction Received: customId = add_to_pups_153
 2025-01-19 22:58:36 [INFO] Handler found for prefix: add_to_pups
 2025-01-19 23:00:20 [ERROR] Error removing PUPS role: channel is not defined handlers\voting\pupsVoteHandler.js:1205
+2025-01-22 20:32:57 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_0
+2025-01-22 20:32:57 [INFO] Handler found for prefix: next_list_pups
+2025-01-22 20:32:59 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 2/5
+2025-01-22 20:41:31 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-22 20:41:31 [WARN] No handler found for button with customId: view_votes_pups_152
+2025-01-22 20:41:31 [ERROR] Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')
+2025-01-22 20:47:50 [INFO] Button Interaction Received: customId = next_myvote_pups_1155078877803192420_0
+2025-01-22 20:47:50 [INFO] Handler found for prefix: next_myvote_pups
+2025-01-22 20:48:23 [INFO] Button Interaction Received: customId = next_myvote_pups_1155078877803192420_0
+2025-01-22 20:48:23 [INFO] Handler found for prefix: next_myvote_pups
+2025-01-22 20:52:08 [INFO] Button Interaction Received: customId = next_myvote_pups_1155078877803192420_0
+2025-01-22 20:52:08 [INFO] Handler found for prefix: next_myvote_pups
+2025-01-22 20:52:09 [INFO] PUPS myvote pagination: user 1155078877803192420 navigated to page 2/2
+2025-01-22 20:52:12 [INFO] Button Interaction Received: customId = prev_myvote_pups_1155078877803192420_1
+2025-01-22 20:52:12 [INFO] Handler found for prefix: prev_myvote_pups
+2025-01-22 20:52:12 [INFO] PUPS myvote pagination: user 1155078877803192420 navigated to page 1/2
+2025-01-22 20:52:15 [INFO] Button Interaction Received: customId = next_myvote_pups_1155078877803192420_0
+2025-01-22 20:52:15 [INFO] Handler found for prefix: next_myvote_pups
+2025-01-22 20:52:16 [INFO] PUPS myvote pagination: user 1155078877803192420 navigated to page 2/2
+2025-01-22 20:52:19 [INFO] Button Interaction Received: customId = next_myvote_pups_1155078877803192420_0
+2025-01-22 20:52:19 [INFO] Handler found for prefix: next_myvote_pups
+2025-01-22 20:52:19 [INFO] Button Interaction Received: customId = prev_myvote_pups_1155078877803192420_1
+2025-01-22 20:52:19 [INFO] Handler found for prefix: prev_myvote_pups
+2025-01-22 20:52:20 [INFO] PUPS myvote pagination: user 1155078877803192420 navigated to page 2/2
+2025-01-22 20:52:20 [INFO] PUPS myvote pagination: user 1155078877803192420 navigated to page 1/2
+2025-01-22 21:14:06 [ERROR] Error adding PUPS role: channel is not defined handlers\voting\pupsVoteHandler.js:1121
+2025-01-22 21:25:21 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-22 21:25:21 [WARN] No handler found for button with customId: view_votes_pups_152
+2025-01-22 21:25:21 [ERROR] Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')
+2025-01-22 21:31:03 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_0
+2025-01-22 21:31:03 [INFO] Handler found for prefix: next_list_pups
+2025-01-22 21:31:04 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 2/5
+2025-01-22 21:31:27 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_0
+2025-01-22 21:31:27 [INFO] Handler found for prefix: next_list_pups
+2025-01-22 21:31:28 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 2/5
+2025-01-22 21:34:08 [ERROR] Error handling /pups list command: pupsRole.members.fetch is not a function handlers\voting\pupsVoteHandler.js:885
+2025-01-22 21:34:47 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_0
+2025-01-22 21:34:47 [INFO] Handler found for prefix: next_list_pups
+2025-01-22 21:34:47 [ERROR] Error handling pagination: pupsRole.members.fetch is not a function handlers\voting\pupsVoteHandler.js:975
+2025-01-22 21:35:06 [INFO] Button Interaction Received: customId = next_premium_1108069385274413177_0
+2025-01-22 21:35:06 [INFO] Handler found for prefix: next_premium
+2025-01-22 21:35:13 [INFO] Button Interaction Received: customId = next_premium_1108069385274413177_0
+2025-01-22 21:35:13 [INFO] Handler found for prefix: next_premium
+2025-01-22 21:35:16 [INFO] Button Interaction Received: customId = prev_premium_1108069385274413177_1
+2025-01-22 21:35:16 [INFO] Handler found for prefix: prev_premium
+2025-01-22 21:36:07 [INFO] Button Interaction Received: customId = next_premium_1108069385274413177_0
+2025-01-22 21:36:07 [INFO] Handler found for prefix: next_premium
+2025-01-22 21:38:21 [INFO] Button Interaction Received: customId = upvote_pups_1108069385274413177
+2025-01-22 21:38:21 [INFO] Handler found for prefix: upvote_pups
+2025-01-22 21:38:22 [INFO] Button Interaction Received: customId = upvote_pups_1108069385274413177
+2025-01-22 21:38:22 [INFO] Handler found for prefix: upvote_pups
+2025-01-22 21:38:24 [INFO] User 703849003535695932 cast a upvote on poll for user 1108069385274413177
+2025-01-22 21:38:26 [INFO] User 1155078877803192420 cast a upvote on poll for user 1108069385274413177
+2025-01-22 21:40:36 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_0
+2025-01-22 21:40:36 [INFO] Handler found for prefix: next_list_pups
+2025-01-22 21:40:37 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 2/5
+2025-01-22 21:40:38 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_1
+2025-01-22 21:40:38 [INFO] Handler found for prefix: next_list_pups
+2025-01-22 21:40:39 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 3/5
+2025-01-22 21:40:40 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_2
+2025-01-22 21:40:40 [INFO] Handler found for prefix: next_list_pups
+2025-01-22 21:40:41 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 4/5
+2025-01-22 21:40:42 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_3
+2025-01-22 21:40:42 [INFO] Handler found for prefix: next_list_pups
+2025-01-22 21:40:43 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 5/5
+2025-01-22 21:40:44 [INFO] Button Interaction Received: customId = prev_list_pups_1155078877803192420_4
+2025-01-22 21:40:44 [INFO] Handler found for prefix: prev_list_pups
+2025-01-22 21:40:45 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 4/5
+2025-01-22 21:40:46 [INFO] Button Interaction Received: customId = prev_list_pups_1155078877803192420_3
+2025-01-22 21:40:46 [INFO] Handler found for prefix: prev_list_pups
+2025-01-22 21:40:46 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 3/5
+2025-01-22 21:40:47 [INFO] Button Interaction Received: customId = prev_list_pups_1155078877803192420_2
+2025-01-22 21:40:47 [INFO] Handler found for prefix: prev_list_pups
+2025-01-22 21:40:48 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 2/5
+2025-01-22 21:40:49 [INFO] Button Interaction Received: customId = prev_list_pups_1155078877803192420_1
+2025-01-22 21:40:49 [INFO] Handler found for prefix: prev_list_pups
+2025-01-22 21:40:50 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 1/5
+2025-01-22 21:41:37 [INFO] Total members with PUPS role: 45
+2025-01-22 21:41:39 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_0
+2025-01-22 21:41:39 [INFO] Handler found for prefix: next_list_pups
+2025-01-22 21:41:40 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 2/5
+2025-01-22 21:42:14 [INFO] Button Interaction Received: customId = downvote_pups_1108069385274413177
+2025-01-22 21:42:14 [INFO] Handler found for prefix: downvote_pups
+2025-01-22 21:42:18 [INFO] Button Interaction Received: customId = end_vote_pups_1108069385274413177
+2025-01-22 21:42:18 [INFO] Handler found for prefix: end_vote_pups
+2025-01-22 21:42:30 [INFO] Button Interaction Received: customId = downvote_pups_1108069385274413177
+2025-01-22 21:42:30 [INFO] Handler found for prefix: downvote_pups
+2025-01-22 21:42:33 [INFO] User 1155078877803192420 changed their vote to downvote on poll for user 1108069385274413177
+2025-01-22 21:42:40 [INFO] Button Interaction Received: customId = end_vote_pups_1108069385274413177
+2025-01-22 21:42:40 [INFO] Handler found for prefix: end_vote_pups
+2025-01-22 21:42:45 [INFO] Button Interaction Received: customId = upvote_pups_1108069385274413177
+2025-01-22 21:42:45 [INFO] Handler found for prefix: upvote_pups
+2025-01-22 21:42:48 [INFO] Button Interaction Received: customId = end_vote_pups_1108069385274413177
+2025-01-22 21:42:48 [INFO] Handler found for prefix: end_vote_pups
+2025-01-22 21:42:49 [INFO] Button Interaction Received: customId = downvote_pups_1108069385274413177
+2025-01-22 21:42:49 [INFO] Handler found for prefix: downvote_pups
+2025-01-22 21:42:51 [ERROR] Error handling end_vote interaction: DiscordAPIError[50035]: Invalid Form Body
+components[0].components[BASE_TYPE_BAD_LENGTH]: Must be between 1 and 5 in length.
+2025-01-22 21:45:13 [INFO] Button Interaction Received: customId = downvote_pups_1323540254522740777
+2025-01-22 21:45:13 [INFO] Handler found for prefix: downvote_pups
+2025-01-22 21:45:16 [INFO] User 1155078877803192420 cast a downvote on poll for user 1323540254522740777
+2025-01-22 21:45:17 [INFO] Button Interaction Received: customId = end_vote_pups_1323540254522740777
+2025-01-22 21:45:17 [INFO] Handler found for prefix: end_vote_pups
+2025-01-22 21:47:19 [INFO] Button Interaction Received: customId = upvote_pups_1323540254522740777
+2025-01-22 21:47:19 [INFO] Handler found for prefix: upvote_pups
+2025-01-22 21:47:22 [INFO] User 1155078877803192420 cast a upvote on poll for user 1323540254522740777
+2025-01-22 21:47:22 [INFO] Button Interaction Received: customId = end_vote_pups_1323540254522740777
+2025-01-22 21:47:22 [INFO] Handler found for prefix: end_vote_pups
+2025-01-22 21:47:28 [INFO] Button Interaction Received: customId = add_to_pups_160
+2025-01-22 21:47:28 [INFO] Handler found for prefix: add_to_pups

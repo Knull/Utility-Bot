@@ -1,3 +1,10 @@
 2025-01-19 22:40:53 [ERROR] Original voting result message not found.
 2025-01-19 22:51:24 [ERROR] Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')
 2025-01-19 23:00:20 [ERROR] Error removing PUPS role: channel is not defined handlers\voting\pupsVoteHandler.js:1205
+2025-01-22 20:41:31 [ERROR] Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')
+2025-01-22 21:14:06 [ERROR] Error adding PUPS role: channel is not defined handlers\voting\pupsVoteHandler.js:1121
+2025-01-22 21:25:21 [ERROR] Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')
+2025-01-22 21:34:08 [ERROR] Error handling /pups list command: pupsRole.members.fetch is not a function handlers\voting\pupsVoteHandler.js:885
+2025-01-22 21:34:47 [ERROR] Error handling pagination: pupsRole.members.fetch is not a function handlers\voting\pupsVoteHandler.js:975
+2025-01-22 21:42:51 [ERROR] Error handling end_vote interaction: DiscordAPIError[50035]: Invalid Form Body
+components[0].components[BASE_TYPE_BAD_LENGTH]: Must be between 1 and 5 in length.

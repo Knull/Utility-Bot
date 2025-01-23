@@ -41,6 +41,8 @@ const buttonHandlers = {
     'add_to_pups': pupsVoteHandler.handleAddToPupsButton, // Corrected from handleAddToPups
     'next_list_pups': pupsVoteHandler.handlePagination,
     'prev_list_pups': pupsVoteHandler.handlePagination,
+    'next_myvote_pups': pupsVoteHandler.handleMyVotePagination,
+    'prev_myvote_pups': pupsVoteHandler.handleMyVotePagination,
 
     // PUGs Handlers
     'upvote_pugs': pugsVoteHandler.handleUpvote,

@@ -605,30 +605,9 @@ const handleEndVote = async (interaction) => {
                 );
             }
 
-            // Send an ephemeral reply to the manager with the vote results and "Add to Pups" button
-            const managerEmbed = new EmbedBuilder()
-                .setAuthor({ name: `${targetMember.user.username} | PUPS Vote Results`, iconURL: targetMember.user.displayAvatarURL() })
-                .setDescription(`**Upvotes 👍:** \`\`\`${upvotes}\`\`\`\n**Downvotes 💔:** \`\`\`${downvotes}\`\`\`\n<@${targetUserId}> has **${voteWon ? 'won' : 'lost'}** the vote.`)
-                .setColor(resultColor)
-                .setFooter({ text: `Created by ${message.embeds[0].footer.text.replace('Created by ', '')}`, iconURL: message.embeds[0].footer.iconURL })
-                .setTimestamp();
-
-            let managerButtons;
-            if (voteWon) {
-                managerButtons = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder()
-                        .setCustomId(`add_to_pups_${poll.id}`)
-                        .setLabel('Add to Pups')
-                        .setStyle(ButtonStyle.Primary)
-                        .setEmoji('✅') // Checkmark emoji
-                );
-            } else {
-                // No button if vote lost
-                managerButtons = new ActionRowBuilder(); // Empty ActionRow
-            }
+            
 
             await interaction.editReply({ embeds: [resultEmbed], components: [actionButtons] });
-            await interaction.followUp({ embeds: [managerEmbed], components: [managerButtons], ephemeral: true });
         } catch (error) {
             logger.error(`Error handling end_vote interaction: ${error}`);
             const embed = new EmbedBuilder()
@@ -868,74 +847,88 @@ const handleCreate = async (interaction) => {
  * @param {CommandInteraction} interaction 
  */
 const handleList = async (interaction) => {
-    // Defer the reply if necessary (optional, depends on processing time)
-    await interaction.deferReply({ ephemeral: true }); // Changed from flags: InteractionResponseFlags.EPHEMERAL
+    try {
+        // Defer the reply to give the bot more time to process
+        await interaction.deferReply({ ephemeral: false });
 
-    const pupsRole = interaction.guild.roles.cache.get(config.pupsRoleId);
+        // Fetch the PUPS role from the guild
+        const pupsRole = interaction.guild.roles.cache.get(config.pupsRoleId);
 
-    if (!pupsRole) {
-        logger.error(`PUPS Role with ID ${config.pupsRoleId} not found.`);
+        if (!pupsRole) {
+            logger.error(`PUPS Role with ID ${config.pupsRoleId} not found.`);
+            const embed = new EmbedBuilder()
+                .setDescription('PUPS role not found.')
+                .setColor(0x980e00)
+                .setTimestamp();
+            return interaction.editReply({ embeds: [embed] });
+        }
+
+        // Fetch all guild members (requires GUILD_MEMBERS intent)
+        await interaction.guild.members.fetch();
+
+        // Access the members with the PUPS role from the cache
+        const membersWithRole = pupsRole.members;
+
+        const membersArray = Array.from(membersWithRole.values());
+        const pageSize = 10;
+        const totalPages = Math.ceil(membersArray.length / pageSize);
+
+        // Debugging Log
+        logger.info(`Total members with PUPS role: ${membersArray.length}`);
+
+        if (totalPages === 0) {
+            const noMembersEmbed = new EmbedBuilder()
+                .setDescription('```ini\nNo members with PUPS role found.\n```')
+                .setColor(0x980e00)
+                .setTimestamp();
+            return interaction.editReply({ embeds: [noMembersEmbed] });
+        }
+
+        const currentPage = 0; // Start with the first page
+        const paginatedMembers = membersArray.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+
+        const memberList = paginatedMembers.map((member, index) => `\`\`${index + 1 + currentPage * pageSize}.\`\` <@${member.id}>`).join('\n');
+        const userPosition = membersArray.findIndex(member => member.id === interaction.user.id) + 1;
+
+        const pupsRoleColor = pupsRole.color || 0xe96d6d; // Fallback color if role has no color
+
+        const listEmbed = new EmbedBuilder()
+            .setAuthor({ name: 'PUPS List', iconURL: interaction.guild.iconURL() })
+            .setDescription(`Mode: **PUPS** [${currentPage + 1}/${totalPages}]\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n${memberList}\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬`)
+            .setFooter({ text: `${userPosition}. [${interaction.user.username}]`, iconURL: interaction.user.displayAvatarURL() })
+            .setColor(pupsRoleColor)
+            .setTimestamp();
+
+        const buttons = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`prev_list_pups_${interaction.user.id}_${currentPage}`)
+                    .setEmoji('⬅️')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled(currentPage === 0),
+                new ButtonBuilder()
+                    .setCustomId(`next_list_pups_${interaction.user.id}_${currentPage}`)
+                    .setEmoji('➡️')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled(currentPage === totalPages - 1)
+            );
+
+        await interaction.editReply({ embeds: [listEmbed], components: [buttons] });
+    } catch (error) {
+        logger.error('Error handling /pups list command:', error);
         const embed = new EmbedBuilder()
-            .setDescription('PUPS role not found.')
+            .setDescription('An error occurred while fetching the PUPS list.')
             .setColor(0x980e00)
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
-
-    const membersWithRole = await interaction.guild.members.fetch();
-    const membersArray = Array.from(membersWithRole.values()).filter(member => member.roles.cache.has(pupsRole.id));
-    const pageSize = 10;
-    const totalPages = Math.ceil(membersArray.length / pageSize);
-
-    if (totalPages === 0) {
-        const noMembersEmbed = new EmbedBuilder()
-            .setDescription('```ini\nNo members with PUPS role found.\n```')
-            .setColor(0x980e00)
-            .setTimestamp();
-        return interaction.editReply({ embeds: [noMembersEmbed] });
-    }
-
-    const currentPage = 0; // Start with the first page
-    const paginatedMembers = membersArray.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
-
-    const memberList = paginatedMembers.map((member, index) => `\`\`${index + 1 + currentPage * pageSize}.\`\` <@${member.id}>`).join('\n');
-    const userPosition = membersArray.findIndex(member => member.id === interaction.user.id) + 1;
-
-    const pupsRoleColor = pupsRole.color || 0xe96d6d; // Fallback color if role has no color
-
-    const listEmbed = new EmbedBuilder()
-        .setAuthor({ name: 'PUPS List', iconURL: interaction.guild.iconURL() })
-        .setDescription(`Mode: **PUPS** [${currentPage + 1}/${totalPages}]\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n${memberList}\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬`)
-        .setFooter({ text: `${userPosition}. [${interaction.user.username}]`, iconURL: interaction.user.displayAvatarURL() })
-        .setColor(pupsRoleColor)
-        .setTimestamp();
-
-    const buttons = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setCustomId(`prev_list_pups_${interaction.user.id}_${currentPage}`)
-                .setEmoji('⬅️')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(currentPage === 0),
-            new ButtonBuilder()
-                .setCustomId(`next_list_pups_${interaction.user.id}_${currentPage}`)
-                .setEmoji('➡️')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(currentPage === totalPages - 1)
-        );
-
-    await interaction.editReply({ embeds: [listEmbed], components: [buttons] });
 };
-
 /**
  * Handle pagination for the PUPS list
  * @param {ButtonInteraction} interaction 
  */
 const handlePagination = async (interaction) => {
-    // Defer the reply to extend the timeout
-    await interaction.deferReply({ ephemeral: true }); // Changed from flags: InteractionResponseFlags.EPHEMERAL
-
-    const customId = interaction.customId; // e.g., 'next_list_pups_1155078877803192420_0'
+    const customId = interaction.customId; // e.g., 'next_list_pups_<userId>_<currentPage>'
     const parts = customId.split('_');
 
     if (parts.length < 5) {
@@ -944,7 +937,7 @@ const handlePagination = async (interaction) => {
             .setDescription('Invalid pagination interaction.')
             .setColor(0x980e00)
             .setTimestamp();
-        return interaction.editReply({ embeds: [embed] });
+        return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     const action = parts[0]; // 'next' or 'prev'
@@ -953,12 +946,13 @@ const handlePagination = async (interaction) => {
     const userId = parts[3]; // '1155078877803192420'
     let currentPage = parseInt(parts[4], 10); // 0
 
+    // Verify that the user interacting is the initiator
     if (interaction.user.id !== userId) {
         const embed = new EmbedBuilder()
             .setDescription(`> Only <@${userId}> can interact with these buttons.`)
             .setColor('#D72F2F')
             .setTimestamp();
-        return interaction.editReply({ embeds: [embed] });
+        return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     // Fetch the PUPS role
@@ -969,33 +963,28 @@ const handlePagination = async (interaction) => {
             .setDescription('PUPS role not found.')
             .setColor(0x980e00)
             .setTimestamp();
-        return interaction.editReply({ embeds: [embed] });
+        return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     try {
-        const membersWithRole = await interaction.guild.members.fetch();
-        const membersArray = Array.from(membersWithRole.values()).filter(member => member.roles.cache.has(pupsRole.id));
-        const userPosition = membersArray.findIndex(member => member.id === interaction.user.id) + 1;
+        // Fetch all guild members (requires GUILD_MEMBERS intent)
+        await interaction.guild.members.fetch();
+
+        // Access the members with the PUPS role from the cache
+        const membersWithRole = pupsRole.members;
+        const membersArray = Array.from(membersWithRole.values());
+        const pageSize = 10;
+        const totalPages = Math.ceil(membersArray.length / pageSize);
 
         if (membersArray.length === 0) {
             const embed = new EmbedBuilder()
                 .setDescription('No members have the PUPS role.')
                 .setColor(0xFFD700)
                 .setTimestamp();
-            return interaction.editReply({ embeds: [embed], components: [] });
+            return interaction.update({ embeds: [embed], components: [] });
         }
 
-        const pageSize = 10;
-        const totalPages = Math.ceil(membersArray.length / pageSize);
-
-        if (currentPage < 0 || currentPage >= totalPages) {
-            const embed = new EmbedBuilder()
-                .setDescription('Invalid page number.')
-                .setColor(0xFFD700)
-                .setTimestamp();
-            return interaction.editReply({ embeds: [embed], components: [] });
-        }
-
+        // Adjust currentPage based on action
         if (action === 'next') {
             currentPage += 1;
         } else if (action === 'prev') {
@@ -1006,7 +995,7 @@ const handlePagination = async (interaction) => {
                 .setDescription('Unknown pagination action.')
                 .setColor(0xFFD700)
                 .setTimestamp();
-            return interaction.editReply({ embeds: [embed], ephemeral: true });
+            return interaction.reply({ embeds: [embed], ephemeral: true });
         }
 
         // Ensure currentPage is within bounds after increment/decrement
@@ -1015,6 +1004,8 @@ const handlePagination = async (interaction) => {
 
         const paginatedMembers = membersArray.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
         const memberList = paginatedMembers.map((member, index) => `\`\`${index + 1 + currentPage * pageSize}.\`\` <@${member.id}>`).join('\n');
+
+        const userPosition = membersArray.findIndex(member => member.id === interaction.user.id) + 1;
 
         const pupsRoleColor = pupsRole.color || 0xe96d6d; // Fallback color if role has no color
 
@@ -1039,7 +1030,8 @@ const handlePagination = async (interaction) => {
                     .setDisabled(currentPage === totalPages - 1)
             );
 
-        await interaction.editReply({ embeds: [embed], components: [buttons] });
+        // Update the original message with the new embed and updated buttons
+        await interaction.update({ embeds: [embed], components: [buttons] });
         logger.info(`PUPS list pagination: user ${userId} navigated to page ${currentPage + 1}/${totalPages}`);
     } catch (error) {
         logger.error('Error handling pagination:', error);
@@ -1047,7 +1039,7 @@ const handlePagination = async (interaction) => {
             .setDescription('An error occurred while handling pagination.')
             .setColor(0x980e00)
             .setTimestamp();
-        return interaction.editReply({ embeds: [embed] });
+        return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 };
 
@@ -1223,11 +1215,14 @@ const handleRemove = async (interaction) => {
  */
 const handleMyVote = async (interaction) => {
     // Defer the reply to extend the timeout
-    await interaction.deferReply({ ephemeral: true }); // Changed from flags: InteractionResponseFlags.EPHEMERAL
+    await interaction.deferReply({ ephemeral: false }); // Public reply as per requirements
 
     try {
         const userId = interaction.user.id;
-        let [polls] = await pool.execute('SELECT * FROM polls WHERE user_id = ? AND type = "pups" ORDER BY created_at DESC', [userId]);
+        let [polls] = await pool.execute(
+            'SELECT * FROM polls WHERE user_id = ? AND type = "pups" ORDER BY created_at DESC',
+            [userId]
+        );
 
         if (polls.length === 0) {
             const noPollsEmbed = new EmbedBuilder()
@@ -1237,42 +1232,40 @@ const handleMyVote = async (interaction) => {
             return interaction.editReply({ embeds: [noPollsEmbed] });
         }
 
+        const totalPages = polls.length;
         const currentPage = 0; // Start with the first poll
         const poll = polls[currentPage];
         const status = poll.active ? 'active' : 'inactive';
         const user = interaction.user;
 
-        let pollUser;
-        try {
-            pollUser = await interaction.guild.members.fetch(poll.user_id);
-        } catch (err) {
-            pollUser = null;
-            logger.error(`Poll user with ID ${poll.user_id} not found.`);
-        }
+        // Calculate Poll ID based on recency
+        const pollId = totalPages - currentPage;
 
         const pollEmbed = new EmbedBuilder()
             .setAuthor({ name: `${user.username} | PUPS Vote`, iconURL: user.displayAvatarURL() })
-            .setDescription(`> A vote has been created for <@${poll.user_id}> to join <@&${config.pupsRoleId}>.`)
-            .addFields(
+            .setDescription(
+                `**Poll ID:** \`${pollId}\`\n` +
+                `> This poll is currently __\`${status}\`__.\u00A0\u00A0\u00A0\u00A0\u00A0` // Added Unicode spaces here
+            )            .addFields(
                 { name: 'Upvotes 👍', value: `\`\`\`${poll.upvotes}\`\`\``, inline: true },
                 { name: 'Downvotes 👎', value: `\`\`\`${poll.downvotes}\`\`\``, inline: true }
             )
-            .setFooter({ text: `Poll ${currentPage + 1}/${polls.length}`, iconURL: user.displayAvatarURL() })
+            .setFooter({ text: `Poll 1/${polls.length}`, iconURL: user.displayAvatarURL() })
             .setColor('#e96d6d')
             .setTimestamp();
 
         const buttons = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId(`prev_list_pups_${userId}_${currentPage}`)
+                    .setCustomId(`prev_myvote_pups_${userId}_${currentPage}`)
                     .setEmoji('⬅️')
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(currentPage === 0),
                 new ButtonBuilder()
-                    .setCustomId(`next_list_pups_${userId}_${currentPage}`)
+                    .setCustomId(`next_myvote_pups_${userId}_${currentPage}`)
                     .setEmoji('➡️')
                     .setStyle(ButtonStyle.Secondary)
-                    .setDisabled(currentPage === polls.length - 1),
+                    .setDisabled(currentPage === totalPages - 1),
                 new ButtonBuilder()
                     .setCustomId(`view_votes_pups_${poll.id}`)
                     .setLabel('View Votes')
@@ -1287,6 +1280,119 @@ const handleMyVote = async (interaction) => {
             .setColor(0x980e00)
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
+    }
+};
+/**
+ * Handle pagination for the /pups myvote command
+ * @param {ButtonInteraction} interaction 
+ */
+const handleMyVotePagination = async (interaction) => {
+    const customId = interaction.customId; // e.g., 'next_myvote_pups_<userId>_<currentPage>'
+    const parts = customId.split('_');
+
+    if (parts.length < 5) {
+        logger.warn(`Invalid customId format for myvote pagination: ${customId}`);
+        const embed = new EmbedBuilder()
+            .setDescription('Invalid pagination interaction.')
+            .setColor(0x980e00)
+            .setTimestamp();
+        return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    const action = parts[0]; // 'next' or 'prev'
+    const type = parts[1]; // 'myvote'
+    const pollType = parts[2]; // 'pups'
+    const initiatorId = parts[3]; // 'userId'
+    let currentPage = parseInt(parts[4], 10); // Current page index
+
+    // Verify that the user interacting is the initiator
+    if (interaction.user.id !== initiatorId) {
+        const embed = new EmbedBuilder()
+            .setDescription(`> Only <@${initiatorId}> can use these buttons.`)
+            .setColor('#D72F2F')
+            .setTimestamp();
+        return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    try {
+        // Fetch all polls for the initiator
+        let [polls] = await pool.execute(
+            'SELECT * FROM polls WHERE user_id = ? AND type = "pups" ORDER BY created_at DESC',
+            [initiatorId]
+        );
+
+        if (polls.length === 0) {
+            const embed = new EmbedBuilder()
+                .setDescription('You do not have any polls.')
+                .setColor(0xFFD700)
+                .setTimestamp();
+            return interaction.update({ embeds: [embed], components: [] });
+        }
+
+        const totalPages = polls.length;
+
+        // Adjust currentPage based on action
+        if (action === 'next') {
+            currentPage += 1;
+        } else if (action === 'prev') {
+            currentPage -= 1;
+        } else {
+            logger.warn(`Unknown pagination action: ${action}`);
+            const embed = new EmbedBuilder()
+                .setDescription('Unknown pagination action.')
+                .setColor(0xFFD700)
+                .setTimestamp();
+            return interaction.reply({ embeds: [embed], ephemeral: true });
+        }
+
+        // Ensure currentPage is within bounds
+        if (currentPage < 0) currentPage = 0;
+        if (currentPage >= totalPages) currentPage = totalPages - 1;
+
+        const poll = polls[currentPage];
+        const status = poll.active ? 'active' : 'inactive';
+        const pollId = totalPages - currentPage; // Adjust Poll ID based on recency
+
+        const pollEmbed = new EmbedBuilder()
+            .setAuthor({ name: `${interaction.user.username} | PUPS Vote`, iconURL: interaction.user.displayAvatarURL() })
+            .setDescription(`**Poll ID:** \`${pollId}\`\n> This poll is currently __\`${status}\`__`)
+            .addFields(
+                { name: 'Upvotes 👍', value: `\`\`\`${poll.upvotes}\`\`\``, inline: true },
+                { name: 'Downvotes 👎', value: `\`\`\`${poll.downvotes}\`\`\``, inline: true }
+            )
+            .setFooter({ text: `Poll ${currentPage + 1}/${totalPages}`, iconURL: interaction.user.displayAvatarURL() })
+            .setColor('#e96d6d')
+            .setTimestamp();
+
+        const buttons = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`prev_myvote_pups_${initiatorId}_${currentPage}`)
+                    .setEmoji('⬅️')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled(currentPage === 0),
+                new ButtonBuilder()
+                    .setCustomId(`next_myvote_pups_${initiatorId}_${currentPage}`)
+                    .setEmoji('➡️')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled(currentPage === totalPages - 1),
+                new ButtonBuilder()
+                    .setCustomId(`view_votes_pups_${poll.id}`)
+                    .setLabel('View Votes')
+                    .setStyle(ButtonStyle.Primary)
+            );
+
+        // Edit the original message with the new embed and updated buttons
+        await interaction.update({ embeds: [pollEmbed], components: [buttons] });
+
+        logger.info(`PUPS myvote pagination: user ${initiatorId} navigated to page ${currentPage + 1}/${totalPages}`);
+    } catch (error) {
+        logger.error('Error handling myvote pagination:', error);
+        const embed = new EmbedBuilder()
+            .setDescription('An error occurred while handling pagination.')
+            .setColor(0x980e00)
+            .setTimestamp();
+        return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 };
 
@@ -1459,5 +1565,6 @@ module.exports = {
     handleMyVote,
     handleAddToPups,
     handleAddToPupsButton,
-    closePreviousPoll
+    closePreviousPoll,
+    handleMyVotePagination
 };
