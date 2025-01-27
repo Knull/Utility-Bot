@@ -626,90 +626,8 @@ const handleEndVote = async (interaction) => {
     }
 };
 
-/**
- * Handle the View Votes button
- * @param {ButtonInteraction} interaction 
- */
-const handleViewVotes = async (interaction) => {
-    // Defer the reply to extend the timeout
-    await interaction.deferReply({ ephemeral: true }); // Changed from flags: InteractionResponseFlags.EPHEMERAL
 
-    const customId = interaction.customId;
-    const parts = customId.split('_');
 
-    if (parts.length < 4) {
-        logger.warn(`Invalid customId for view votes: ${customId}`);
-        const embed = new EmbedBuilder()
-            .setDescription('Invalid interaction.')
-            .setColor(0x980e00)
-            .setTimestamp();
-        return interaction.editReply({ embeds: [embed] });
-    }
-
-    const pollType = parts[2]; // 'pups'
-    const pollId = parts[3];
-
-    if (pollType !== 'pups') {
-        logger.warn(`Ignoring non-pups poll type: ${pollType}`);
-        const embed = new EmbedBuilder()
-            .setDescription('This interaction is not valid for PUPS polls.')
-            .setColor(0x980e00)
-            .setTimestamp();
-        return interaction.editReply({ embeds: [embed] });
-    }
-
-    try {
-        // Fetch poll details
-        const [polls] = await pool.execute('SELECT * FROM polls WHERE id = ? AND type = "pups"', [pollId]);
-        if (polls.length === 0) {
-            const embed = new EmbedBuilder()
-                .setDescription('Poll not found.')
-                .setColor(0x980e00)
-                .setTimestamp();
-            return interaction.editReply({ embeds: [embed] });
-        }
-
-        const poll = polls[0];
-
-        // Fetch upvoters
-        const [upvoters] = await pool.execute('SELECT user_id FROM votes WHERE poll_id = ? AND vote = "upvote"', [pollId]);
-        // Fetch downvoters
-        const [downvoters] = await pool.execute('SELECT user_id FROM votes WHERE poll_id = ? AND vote = "downvote"', [pollId]);
-
-        // Map user IDs to mentions
-        const upvoteMentions = upvoters.map(v => `<@${v.user_id}>`).join('\n') || 'No upvotes yet.';
-        const downvoteMentions = downvoters.map(v => `<@${v.user_id}>`).join('\n') || 'No downvotes yet.';
-
-        let pollUser;
-        try {
-            pollUser = await interaction.guild.members.fetch(poll.user_id);
-        } catch (err) {
-            pollUser = null;
-            logger.error(`Poll user with ID ${poll.user_id} not found.`);
-        }
-
-        const embed = new EmbedBuilder()
-            .setAuthor({ 
-                name: pollUser?.user.username || 'User', 
-                iconURL: pollUser?.user.displayAvatarURL() || interaction.guild.iconURL() 
-            })
-            .addFields(
-                { name: 'Upvotes 👍', value: upvoteMentions, inline: true },
-                { name: 'Downvotes 💔', value: downvoteMentions, inline: true }
-            )
-            .setColor('#FFD700') // Gold color for results
-            .setTimestamp();
-
-        await interaction.editReply({ embeds: [embed] });
-    } catch (error) {
-        logger.error('Error fetching vote details:', error);
-        const embed = new EmbedBuilder()
-            .setDescription('An error occurred while fetching the votes.')
-            .setColor(0x980e00)
-            .setTimestamp();
-        return interaction.editReply({ embeds: [embed] });
-    }
-};
 
 /**
  * Handle the `/pups create` command for managers to create their own PUPS votes
@@ -1226,7 +1144,7 @@ const handleMyVote = async (interaction) => {
 
         if (polls.length === 0) {
             const noPollsEmbed = new EmbedBuilder()
-                .setDescription('```ini\nYou do not have any polls```\n')
+                .setDescription('```ini\nYou do not have any polls```')
                 .setColor('#D72F2F')
                 .setTimestamp();
             return interaction.editReply({ embeds: [noPollsEmbed] });
@@ -1244,9 +1162,10 @@ const handleMyVote = async (interaction) => {
         const pollEmbed = new EmbedBuilder()
             .setAuthor({ name: `${user.username} | PUPS Vote`, iconURL: user.displayAvatarURL() })
             .setDescription(
-                `**Poll ID:** \`${pollId}\`\n` +
+                `- **Poll ID** relative to user: \`${pollId}\`\n` +
                 `> This poll is currently __\`${status}\`__.\u00A0\u00A0\u00A0\u00A0\u00A0` // Added Unicode spaces here
-            )            .addFields(
+            )
+            .addFields(
                 { name: 'Upvotes 👍', value: `\`\`\`${poll.upvotes}\`\`\``, inline: true },
                 { name: 'Downvotes 👎', value: `\`\`\`${poll.downvotes}\`\`\``, inline: true }
             )
@@ -1261,15 +1180,16 @@ const handleMyVote = async (interaction) => {
                     .setEmoji('⬅️')
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(currentPage === 0),
+                    new ButtonBuilder()
+                    .setCustomId(`voteview_viewvotes_${userId}_pups_${currentPage}`) // Changed from `view_votes_pups_${poll.id}`
+                    .setEmoji('🔍')
+                    .setLabel('View Votes')
+                    .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
                     .setCustomId(`next_myvote_pups_${userId}_${currentPage}`)
                     .setEmoji('➡️')
                     .setStyle(ButtonStyle.Secondary)
-                    .setDisabled(currentPage === totalPages - 1),
-                new ButtonBuilder()
-                    .setCustomId(`view_votes_pups_${poll.id}`)
-                    .setLabel('View Votes')
-                    .setStyle(ButtonStyle.Primary)
+                    .setDisabled(currentPage === totalPages - 1)                
             );
 
         await interaction.editReply({ embeds: [pollEmbed], components: [buttons] });
@@ -1556,7 +1476,6 @@ module.exports = {
     handleDownvote,
     handleVoteButton,
     handleEndVote,
-    handleViewVotes,
     handleCreate,
     handleList,
     handlePagination,

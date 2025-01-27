@@ -1,5 +1,5 @@
 // events/interactionCreate.js
-const { Events, InteractionResponseFlags } = require('discord.js');
+const { Events } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const buttonHandlers = require('../handlers/buttonHandlersRegistry');
@@ -18,7 +18,7 @@ module.exports = {
                     logger.warn(`Command file not found: ${commandPath}`);
                     return interaction.reply({
                         content: 'This command does not exist.',
-                        flags: [InteractionResponseFlags.EPHEMERAL]
+                        ephemeral: true
                     });
                 }
 
@@ -29,7 +29,7 @@ module.exports = {
                     logger.warn(`Execute function not found for command: ${interaction.commandName}`);
                     return interaction.reply({
                         content: 'This command is not implemented correctly.',
-                        flags: [InteractionResponseFlags.EPHEMERAL]
+                        ephemeral: true
                     });
                 }
 
@@ -56,7 +56,7 @@ module.exports = {
                     // Here, we'll send an ephemeral message as a fallback
                     return interaction.reply({ 
                         content: 'No handler was found for this button.', 
-                        flags: [InteractionResponseFlags.EPHEMERAL] 
+                        ephemeral: true 
                     });
                 }
             } else if (interaction.isModalSubmit()) {
@@ -78,21 +78,44 @@ module.exports = {
                     logger.warn(`No handler found for modal with customId: ${customId}`);
                     return interaction.reply({ 
                         content: 'No handler was found for this modal.', 
-                        flags: [InteractionResponseFlags.EPHEMERAL] 
+                        ephemeral: true 
                     });
                 }
+            } else if (interaction.isAutocomplete()) { // **Added Autocomplete Handling**
+                const commandName = interaction.commandName;
+                logger.info(`Autocomplete Interaction Received for command: ${commandName}`);
+
+                // Construct the path to the command file
+                const commandPath = `../commands/${commandName}.js`;
+                const fullCommandPath = path.resolve(__dirname, commandPath);
+
+                // Check if the command file exists
+                if (!fs.existsSync(fullCommandPath)) {
+                    logger.warn(`Command file not found for autocomplete: ${commandPath}`);
+                    return interaction.respond([]);
+                }
+
+                const command = require(fullCommandPath);
+
+                // Check if the command has an autocomplete handler
+                if (!command.autocomplete) {
+                    logger.warn(`Autocomplete handler not found for command: ${commandName}`);
+                    return interaction.respond([]);
+                }
+
+                await command.autocomplete(interaction);
             }
         } catch (error) {
             logger.error(`Error handling interaction: ${error}`);
             if (interaction.replied || interaction.deferred) {
                 await interaction.followUp({ 
                     content: 'There was an error while executing this interaction!', 
-                    flags: [InteractionResponseFlags.EPHEMERAL] 
+                    ephemeral: true 
                 });
             } else {
                 await interaction.reply({ 
                     content: 'There was an error while executing this interaction!', 
-                    flags: [InteractionResponseFlags.EPHEMERAL] 
+                    ephemeral: true 
                 });
             }
         }

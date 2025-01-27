@@ -8,3 +8,10 @@
 2025-01-22 21:34:47 [ERROR] Error handling pagination: pupsRole.members.fetch is not a function handlers\voting\pupsVoteHandler.js:975
 2025-01-22 21:42:51 [ERROR] Error handling end_vote interaction: DiscordAPIError[50035]: Invalid Form Body
 components[0].components[BASE_TYPE_BAD_LENGTH]: Must be between 1 and 5 in length.
+2025-01-23 18:20:16 [ERROR] Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')
+2025-01-26 20:17:55 [ERROR] Error handling interaction: DiscordAPIError[10062]: Unknown interaction
+2025-01-27 16:23:18 [ERROR] Error fetching polls: Unknown column 'status' in 'field list' node_modules\mysql2\lib\promise\pool.js:54
+2025-01-27 19:17:42 [ERROR] Error fetching polls: Unknown column 'status' in 'field list' node_modules\mysql2\lib\promise\pool.js:54
+2025-01-27 20:52:31 [ERROR] Poll owner with ID undefined not found.
+2025-01-27 20:52:31 [ERROR] Error handling view votes for PUPS: Bind parameters must not contain undefined. To pass SQL NULL specify JS null node_modules\mysql2\lib\promise\pool.js:54
+2025-01-27 20:52:31 [ERROR] Error handling interaction: Error [InteractionNotReplied]: The reply to this interaction has not been sent or deferred.

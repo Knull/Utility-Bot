@@ -14,6 +14,7 @@ const handleShowTicketModal = require('./tickets/handleShowTicketModal');
 const pupsVoteHandler = require('./voting/pupsVoteHandler');
 const pugsVoteHandler = require('./voting/pugsVoteHandler');
 const { handlePagination: handleStaffPagination } = require('./staffListHandler');
+const voteviewHandler = require('./voting/voteviewHandler');
 
 const buttonHandlers = {
     // Existing Handlers
@@ -38,6 +39,7 @@ const buttonHandlers = {
     'upvote_pups': pupsVoteHandler.handleUpvote,
     'downvote_pups': pupsVoteHandler.handleDownvote,
     'end_vote_pups': pupsVoteHandler.handleEndVote,
+    'view_votes_pups': voteviewHandler.handleViewVotesButton, // Existing Handler
     'add_to_pups': pupsVoteHandler.handleAddToPupsButton, // Corrected from handleAddToPups
     'next_list_pups': pupsVoteHandler.handlePagination,
     'prev_list_pups': pupsVoteHandler.handlePagination,
@@ -56,6 +58,13 @@ const buttonHandlers = {
     // Staff list handlers
     'stafflist_prev': handleStaffPagination,
     'stafflist_next': handleStaffPagination,
+
+    // New VoteView Handlers
+    'voteview_prev': voteviewHandler.handlePrevButton,
+    'voteview_next': voteviewHandler.handleNextButton,
+    'voteview_viewvotes': voteviewHandler.handleViewVotesButton
 };
 
 module.exports = buttonHandlers;
+
+

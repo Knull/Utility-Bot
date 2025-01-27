@@ -139,3 +139,145 @@ components[0].components[BASE_TYPE_BAD_LENGTH]: Must be between 1 and 5 in lengt
 2025-01-22 21:47:22 [INFO] Handler found for prefix: end_vote_pups
 2025-01-22 21:47:28 [INFO] Button Interaction Received: customId = add_to_pups_160
 2025-01-22 21:47:28 [INFO] Handler found for prefix: add_to_pups
+2025-01-23 18:20:00 [INFO] Total members with PUPS role: 46
+2025-01-23 18:20:02 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_0
+2025-01-23 18:20:02 [INFO] Handler found for prefix: next_list_pups
+2025-01-23 18:20:03 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 2/5
+2025-01-23 18:20:09 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_1
+2025-01-23 18:20:09 [INFO] Handler found for prefix: next_list_pups
+2025-01-23 18:20:11 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 3/5
+2025-01-23 18:20:13 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_2
+2025-01-23 18:20:13 [INFO] Handler found for prefix: next_list_pups
+2025-01-23 18:20:14 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 4/5
+2025-01-23 18:20:16 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-23 18:20:16 [WARN] No handler found for button with customId: view_votes_pups_152
+2025-01-23 18:20:16 [ERROR] Error handling interaction: TypeError: Cannot read properties of undefined (reading 'EPHEMERAL')
+2025-01-23 18:22:53 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-23 18:22:53 [INFO] Handler found for prefix: view_votes_pups
+2025-01-23 18:23:10 [INFO] Button Interaction Received: customId = next_myvote_pups_1155078877803192420_0
+2025-01-23 18:23:10 [INFO] Handler found for prefix: next_myvote_pups
+2025-01-23 18:23:11 [INFO] PUPS myvote pagination: user 1155078877803192420 navigated to page 2/2
+2025-01-23 18:23:14 [INFO] Button Interaction Received: customId = view_votes_pups_144
+2025-01-23 18:23:14 [INFO] Handler found for prefix: view_votes_pups
+2025-01-23 18:26:42 [INFO] Button Interaction Received: customId = view_votes_pups_144
+2025-01-23 18:26:42 [INFO] Handler found for prefix: view_votes_pups
+2025-01-23 18:26:49 [INFO] Button Interaction Received: customId = prev_myvote_pups_1155078877803192420_1
+2025-01-23 18:26:49 [INFO] Handler found for prefix: prev_myvote_pups
+2025-01-23 18:26:50 [INFO] PUPS myvote pagination: user 1155078877803192420 navigated to page 1/2
+2025-01-23 18:26:52 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-23 18:26:52 [INFO] Handler found for prefix: view_votes_pups
+2025-01-23 18:27:09 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-23 18:27:09 [INFO] Handler found for prefix: view_votes_pups
+2025-01-23 18:28:02 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-23 18:28:02 [INFO] Handler found for prefix: view_votes_pups
+2025-01-23 18:28:43 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-23 18:28:43 [INFO] Handler found for prefix: view_votes_pups
+2025-01-23 18:29:05 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-23 18:29:05 [INFO] Handler found for prefix: view_votes_pups
+2025-01-23 18:29:20 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_3
+2025-01-23 18:29:20 [INFO] Handler found for prefix: next_list_pups
+2025-01-23 18:29:22 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 5/5
+2025-01-23 18:29:23 [INFO] Button Interaction Received: customId = prev_list_pups_1155078877803192420_4
+2025-01-23 18:29:23 [INFO] Handler found for prefix: prev_list_pups
+2025-01-23 18:29:24 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 4/5
+2025-01-23 18:29:25 [INFO] Button Interaction Received: customId = prev_list_pups_1155078877803192420_3
+2025-01-23 18:29:25 [INFO] Handler found for prefix: prev_list_pups
+2025-01-23 18:29:26 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 3/5
+2025-01-23 18:29:27 [INFO] Button Interaction Received: customId = prev_list_pups_1155078877803192420_2
+2025-01-23 18:29:27 [INFO] Handler found for prefix: prev_list_pups
+2025-01-23 18:29:28 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 2/5
+2025-01-23 18:29:29 [INFO] Button Interaction Received: customId = prev_list_pups_1155078877803192420_1
+2025-01-23 18:29:29 [INFO] Handler found for prefix: prev_list_pups
+2025-01-23 18:29:30 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 1/5
+2025-01-23 18:29:47 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_0
+2025-01-23 18:29:47 [INFO] Handler found for prefix: next_list_pups
+2025-01-23 18:29:48 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 2/5
+2025-01-26 15:12:48 [INFO] Autocomplete Interaction Received for command: voteview
+2025-01-26 15:15:22 [INFO] Autocomplete Interaction Received for command: voteview
+2025-01-26 15:15:22 [WARN] Autocomplete: Missing user or type option.
+2025-01-26 15:15:31 [INFO] Autocomplete Interaction Received for command: voteview
+2025-01-26 15:15:31 [WARN] Autocomplete: Missing user or type option.
+2025-01-26 15:17:44 [INFO] Autocomplete Interaction Received for command: voteview
+2025-01-26 15:17:44 [WARN] Autocomplete: Missing user or type option.
+2025-01-26 20:17:01 [INFO] Autocomplete Interaction Received for command: voteview
+2025-01-26 20:17:12 [INFO] Autocomplete Interaction Received for command: voteview
+2025-01-26 20:17:43 [INFO] Executing query: SELECT * FROM polls WHERE user_id = ? AND id = ? AND type = ? with params: ["1323540254522740777",0,"pups"]
+2025-01-26 20:17:54 [INFO] Number of polls fetched: 0
+2025-01-26 20:17:55 [ERROR] Error handling interaction: DiscordAPIError[10062]: Unknown interaction
+2025-01-26 20:18:03 [INFO] Autocomplete Interaction Received for command: voteview
+2025-01-26 20:18:39 [INFO] Executing query: SELECT * FROM polls WHERE user_id = ? AND id = ? AND type = ? with params: ["1323540254522740777",0,"pups"]
+2025-01-26 20:18:39 [INFO] Number of polls fetched: 0
+2025-01-26 20:19:35 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-26 20:19:35 [INFO] Handler found for prefix: view_votes_pups
+2025-01-26 20:19:40 [INFO] Button Interaction Received: customId = next_myvote_pups_1155078877803192420_0
+2025-01-26 20:19:40 [INFO] Handler found for prefix: next_myvote_pups
+2025-01-26 20:19:42 [INFO] PUPS myvote pagination: user 1155078877803192420 navigated to page 2/2
+2025-01-26 20:19:43 [INFO] Button Interaction Received: customId = prev_myvote_pups_1155078877803192420_1
+2025-01-26 20:19:43 [INFO] Handler found for prefix: prev_myvote_pups
+2025-01-26 20:19:44 [INFO] PUPS myvote pagination: user 1155078877803192420 navigated to page 1/2
+2025-01-27 16:18:14 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-27 16:18:14 [INFO] Handler found for prefix: view_votes_pups
+2025-01-27 16:23:18 [INFO] Executing query: SELECT id, type, status, created_at FROM polls WHERE user_id = ? AND type = ? ORDER BY created_at DESC with params: ["1323540254522740777","pups"]
+2025-01-27 16:23:18 [ERROR] Error fetching polls: Unknown column 'status' in 'field list' node_modules\mysql2\lib\promise\pool.js:54
+2025-01-27 16:28:01 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-27 16:28:01 [INFO] Handler found for prefix: view_votes_pups
+2025-01-27 16:28:04 [INFO] Upvoters fetched: 1, Downvoters fetched: 0
+2025-01-27 16:28:04 [INFO] Poll owner fetched: knull._
+2025-01-27 16:28:35 [INFO] Button Interaction Received: customId = next_myvote_pups_1155078877803192420_0
+2025-01-27 16:28:35 [INFO] Handler found for prefix: next_myvote_pups
+2025-01-27 16:28:37 [INFO] PUPS myvote pagination: user 1155078877803192420 navigated to page 2/2
+2025-01-27 16:28:39 [INFO] Button Interaction Received: customId = view_votes_pups_144
+2025-01-27 16:28:39 [INFO] Handler found for prefix: view_votes_pups
+2025-01-27 16:28:41 [INFO] Upvoters fetched: 0, Downvoters fetched: 0
+2025-01-27 16:28:41 [INFO] Poll owner fetched: knull._
+2025-01-27 16:28:52 [INFO] Button Interaction Received: customId = prev_myvote_pups_1155078877803192420_1
+2025-01-27 16:28:52 [INFO] Handler found for prefix: prev_myvote_pups
+2025-01-27 16:28:53 [INFO] PUPS myvote pagination: user 1155078877803192420 navigated to page 1/2
+2025-01-27 16:28:56 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-27 16:28:56 [INFO] Handler found for prefix: view_votes_pups
+2025-01-27 16:28:57 [INFO] Upvoters fetched: 1, Downvoters fetched: 0
+2025-01-27 16:28:57 [INFO] Poll owner fetched: knull._
+2025-01-27 16:44:51 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-27 16:44:51 [INFO] Handler found for prefix: view_votes_pups
+2025-01-27 16:44:54 [INFO] Upvoters fetched: 1, Downvoters fetched: 0
+2025-01-27 16:44:54 [INFO] Poll owner fetched: knull._
+2025-01-27 16:45:01 [INFO] Button Interaction Received: customId = next_myvote_pups_1155078877803192420_0
+2025-01-27 16:45:01 [INFO] Handler found for prefix: next_myvote_pups
+2025-01-27 16:45:02 [INFO] PUPS myvote pagination: user 1155078877803192420 navigated to page 2/2
+2025-01-27 16:45:04 [INFO] Button Interaction Received: customId = view_votes_pups_144
+2025-01-27 16:45:04 [INFO] Handler found for prefix: view_votes_pups
+2025-01-27 16:45:05 [INFO] Upvoters fetched: 0, Downvoters fetched: 0
+2025-01-27 16:45:05 [INFO] Poll owner fetched: knull._
+2025-01-27 19:16:36 [INFO] Button Interaction Received: customId = view_votes_pups_144
+2025-01-27 19:16:36 [INFO] Handler found for prefix: view_votes_pups
+2025-01-27 19:16:40 [INFO] Upvoters fetched: 0, Downvoters fetched: 0
+2025-01-27 19:16:40 [INFO] Poll owner fetched: knull._
+2025-01-27 19:16:46 [INFO] Button Interaction Received: customId = prev_myvote_pups_1155078877803192420_1
+2025-01-27 19:16:46 [INFO] Handler found for prefix: prev_myvote_pups
+2025-01-27 19:16:47 [INFO] PUPS myvote pagination: user 1155078877803192420 navigated to page 1/2
+2025-01-27 19:16:50 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-27 19:16:50 [INFO] Handler found for prefix: view_votes_pups
+2025-01-27 19:16:51 [INFO] Upvoters fetched: 1, Downvoters fetched: 0
+2025-01-27 19:16:52 [INFO] Poll owner fetched: knull._
+2025-01-27 19:17:42 [INFO] Executing query: SELECT id, type, status, created_at FROM polls WHERE user_id = ? AND type = ? ORDER BY created_at DESC with params: ["1323540254522740777","pups"]
+2025-01-27 19:17:42 [ERROR] Error fetching polls: Unknown column 'status' in 'field list' node_modules\mysql2\lib\promise\pool.js:54
+2025-01-27 19:21:10 [INFO] Button Interaction Received: customId = next_myvote_pups_1155078877803192420_0
+2025-01-27 19:21:10 [INFO] Handler found for prefix: next_myvote_pups
+2025-01-27 19:21:15 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-27 19:21:15 [INFO] Handler found for prefix: view_votes_pups
+2025-01-27 19:21:18 [INFO] Upvoters fetched: 1, Downvoters fetched: 0
+2025-01-27 19:21:18 [INFO] Poll owner fetched: knull._
+2025-01-27 20:18:56 [INFO] Button Interaction Received: customId = view_votes_pups_152
+2025-01-27 20:18:56 [INFO] Handler found for prefix: view_votes_pups
+2025-01-27 20:18:56 [WARN] Invalid customId for view votes button: view_votes_pups_152
+2025-01-27 20:52:27 [INFO] Button Interaction Received: customId = voteview_viewvotes_1155078877803192420_pups_0
+2025-01-27 20:52:27 [INFO] Handler found for prefix: voteview_viewvotes
+2025-01-27 20:52:31 [ERROR] Poll owner with ID undefined not found.
+2025-01-27 20:52:31 [ERROR] Error handling view votes for PUPS: Bind parameters must not contain undefined. To pass SQL NULL specify JS null node_modules\mysql2\lib\promise\pool.js:54
+2025-01-27 20:52:31 [ERROR] Error handling interaction: Error [InteractionNotReplied]: The reply to this interaction has not been sent or deferred.
+2025-01-27 20:54:49 [INFO] Button Interaction Received: customId = next_myvote_pups_1155078877803192420_0
+2025-01-27 20:54:49 [INFO] Handler found for prefix: next_myvote_pups
+2025-01-27 20:54:50 [INFO] PUPS myvote pagination: user 1155078877803192420 navigated to page 2/2
+2025-01-27 20:54:51 [INFO] Button Interaction Received: customId = prev_myvote_pups_1155078877803192420_1
+2025-01-27 20:54:51 [INFO] Handler found for prefix: prev_myvote_pups
+2025-01-27 20:54:52 [INFO] PUPS myvote pagination: user 1155078877803192420 navigated to page 1/2
