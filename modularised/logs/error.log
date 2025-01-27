@@ -15,3 +15,6 @@ components[0].components[BASE_TYPE_BAD_LENGTH]: Must be between 1 and 5 in lengt
 2025-01-27 20:52:31 [ERROR] Poll owner with ID undefined not found.
 2025-01-27 20:52:31 [ERROR] Error handling view votes for PUPS: Bind parameters must not contain undefined. To pass SQL NULL specify JS null node_modules\mysql2\lib\promise\pool.js:54
 2025-01-27 20:52:31 [ERROR] Error handling interaction: Error [InteractionNotReplied]: The reply to this interaction has not been sent or deferred.
+2025-01-27 21:00:52 [ERROR] Error handling view votes for PUPS: The reply to this interaction has not been sent or deferred. node_modules\discord.js\src\structures\interfaces\InteractionResponses.js:247
+2025-01-27 21:00:52 [ERROR] Error handling interaction: Error [InteractionNotReplied]: The reply to this interaction has not been sent or deferred.
+2025-01-27 21:27:20 [ERROR] Error handling next button: Cannot read properties of undefined (reading 'getUser') handlers\voting\voteviewHandler.js:123

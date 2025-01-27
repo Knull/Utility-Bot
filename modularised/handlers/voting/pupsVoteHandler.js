@@ -1178,17 +1178,17 @@ const handleMyVote = async (interaction) => {
                 new ButtonBuilder()
                     .setCustomId(`prev_myvote_pups_${userId}_${currentPage}`)
                     .setEmoji('⬅️')
-                    .setStyle(ButtonStyle.Secondary)
+                    .setStyle(ButtonStyle.Primary)
                     .setDisabled(currentPage === 0),
                     new ButtonBuilder()
                     .setCustomId(`voteview_viewvotes_${userId}_pups_${currentPage}`) // Changed from `view_votes_pups_${poll.id}`
                     .setEmoji('🔍')
                     .setLabel('View Votes')
-                    .setStyle(ButtonStyle.Primary),
+                    .setStyle(ButtonStyle.Secondary),
                 new ButtonBuilder()
                     .setCustomId(`next_myvote_pups_${userId}_${currentPage}`)
                     .setEmoji('➡️')
-                    .setStyle(ButtonStyle.Secondary)
+                    .setStyle(ButtonStyle.Primary)
                     .setDisabled(currentPage === totalPages - 1)                
             );
 
