@@ -21,3 +21,7 @@ components[0].components[BASE_TYPE_BAD_LENGTH]: Must be between 1 and 5 in lengt
 2025-01-28 11:32:47 [ERROR] Error fetching polls: connect ETIMEDOUT node_modules\mysql2\lib\promise\pool.js:54
 2025-01-28 11:33:35 [ERROR] Error handling next button: Cannot read properties of undefined (reading 'getUser') handlers\voting\voteviewHandler.js:134
 2025-01-28 11:36:20 [ERROR] Error handling next button: createNavigationButtonsFromCustomId is not defined handlers\voting\voteviewHandler.js:262
+2025-01-28 12:10:56 [ERROR] Error handling view votes button: connect ETIMEDOUT node_modules\mysql2\lib\promise\pool.js:54
+2025-01-28 12:10:57 [ERROR] Error handling interaction: DiscordAPIError[10062]: Unknown interaction
+2025-01-28 12:12:38 [ERROR] Error fetching polls: Invalid Form Body
+embeds[0].description[BASE_TYPE_REQUIRED]: This field is required 
