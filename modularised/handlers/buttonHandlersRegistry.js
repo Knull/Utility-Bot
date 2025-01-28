@@ -40,7 +40,7 @@ const buttonHandlers = {
     'downvote_pups': pupsVoteHandler.handleDownvote,
     'end_vote_pups': pupsVoteHandler.handleEndVote,
     'view_votes_pups': voteviewHandler.handleViewVotesButton, // Existing Handler
-    'add_to_pups': pupsVoteHandler.handleAddToPupsButton, // Corrected from handleAddToPups
+    'add_to_pups': pupsVoteHandler.handleAddToPupsButton,
     'next_list_pups': pupsVoteHandler.handlePagination,
     'prev_list_pups': pupsVoteHandler.handlePagination,
     'next_myvote_pups': pupsVoteHandler.handleMyVotePagination,
@@ -51,10 +51,12 @@ const buttonHandlers = {
     'downvote_pugs': pugsVoteHandler.handleDownvote,
     'end_vote_pugs': pugsVoteHandler.handleEndVote,
     'add_to_pugs': pugsVoteHandler.handleAddToPugs,
-    'remove_pugs': pugsVoteHandler.handleRemovePugs,
-    'undo_pugs': pugsVoteHandler.handleUndoPugs,
-    'vouch_pugs': pugsVoteHandler.handleVouchPugs,
-    
+    'add_to_pugs_trial': pugsVoteHandler.handleAddToPugs, // Assuming same handler for both types
+    'next_list_pugs': pugsVoteHandler.handlePagination,
+    'prev_list_pugs': pugsVoteHandler.handlePagination,
+    'next_myvote_pugs': pugsVoteHandler.handleMyVotePagination,
+    'prev_myvote_pugs': pugsVoteHandler.handleMyVotePagination,
+
     // Staff list handlers
     'stafflist_prev': handleStaffPagination,
     'stafflist_next': handleStaffPagination,
@@ -66,5 +68,3 @@ const buttonHandlers = {
 };
 
 module.exports = buttonHandlers;
-
-

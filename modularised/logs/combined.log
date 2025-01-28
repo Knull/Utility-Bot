@@ -462,3 +462,9 @@ embeds[0].description[BASE_TYPE_REQUIRED]: This field is required
 2025-01-28 12:16:07 [INFO] Button Interaction Received: customId = voteview_viewvotes_743056789687500851_pugs_0
 2025-01-28 12:16:07 [INFO] Handler found for prefix: voteview_viewvotes
 2025-01-28 12:16:09 [INFO] Poll owner fetched: maxwie
+2025-01-28 12:35:41 [INFO] Button Interaction Received: customId = voteview_viewvotes_743056789687500851_pugs_0
+2025-01-28 12:35:41 [INFO] Handler found for prefix: voteview_viewvotes
+2025-01-28 12:35:42 [INFO] Poll owner fetched: maxwie
+2025-01-28 12:36:01 [INFO] Button Interaction Received: customId = voteview_viewvotes_1298187047189745754_pups_2
+2025-01-28 12:36:01 [INFO] Handler found for prefix: voteview_viewvotes
+2025-01-28 12:36:02 [INFO] Poll owner fetched: PRBW Utility

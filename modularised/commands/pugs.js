@@ -1,6 +1,7 @@
 // commands/pugs.js
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const pugsVoteHandler = require('../handlers/voting/pugsVoteHandler');
+const config = require('../config/config'); // Ensure config is imported
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -13,7 +14,15 @@ module.exports = {
                 .addUserOption(option =>
                     option.setName('user')
                         .setDescription('User to vote for')
-                        .setRequired(true)))
+                        .setRequired(true))
+                .addStringOption(option =>
+                    option.setName('type')
+                        .setDescription('Type of PUGs vote')
+                        .setRequired(true)
+                        .addChoices(
+                            { name: 'PUGs Trial', value: 'pugs_trial' },
+                            { name: 'PUGs', value: 'pugs' }
+                        )))
         .addSubcommand(subcommand =>
             subcommand
                 .setName('myvote')
@@ -31,7 +40,7 @@ module.exports = {
                         .setDescription('Type of PUGs role (trial or pugs)')
                         .setRequired(true)
                         .addChoices(
-                            { name: 'PUGs Trial', value: 'trial' },
+                            { name: 'PUGs Trial', value: 'pugs_trial' },
                             { name: 'PUGs', value: 'pugs' }
                         )))
         .addSubcommand(subcommand =>
@@ -45,7 +54,7 @@ module.exports = {
         .addSubcommand(subcommand =>
             subcommand
                 .setName('list')
-                .setDescription('List all users with PUGs role')),
+                .setDescription('List all users with PUGs roles')),
     
     async execute(interaction) {
         const { commandName, options } = interaction;
