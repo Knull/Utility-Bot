@@ -47,8 +47,8 @@ const handleVoteViewCommand = async (interaction) => {
             return interaction.editReply({ embeds: [embed], ephemeral: true });
         }
 
-        // Fetch all polls for the specified user and type
-        const query = 'SELECT id, type, active, created_at FROM polls WHERE user_id = ? AND type = ? ORDER BY created_at DESC';
+        // Fetch all polls for the specified user and type, including upvotes and downvotes
+        const query = 'SELECT id, type, active, created_at, upvotes, downvotes FROM polls WHERE user_id = ? AND type = ? ORDER BY created_at DESC';
         const params = [user.id, type.toLowerCase()];
         logger.info(`Executing query: ${query} with params: ${JSON.stringify(params)}`);
         const [polls] = await pool.execute(query, params);
@@ -181,8 +181,8 @@ const handlePrevButton = async (interaction) => {
     currentPage -= 1;
 
     try {
-        // Fetch all polls again
-        const query = 'SELECT id, type, active, created_at FROM polls WHERE user_id = ? AND type = ? ORDER BY created_at DESC';
+        // Fetch all polls again, including upvotes and downvotes
+        const query = 'SELECT id, type, active, created_at, upvotes, downvotes FROM polls WHERE user_id = ? AND type = ? ORDER BY created_at DESC';
         const params = [userId, type.toLowerCase()];
         const [polls] = await pool.execute(query, params);
 
@@ -199,7 +199,7 @@ const handlePrevButton = async (interaction) => {
         const user = await interaction.client.users.fetch(userId);
 
         const embed = createPollEmbed(interaction, user, type, poll, currentPage, totalPages);
-        const buttons = createNavigationButtons(interaction, type, currentPage, totalPages);
+        const buttons = createNavigationButtonsFromCustomId(userId, type, currentPage, totalPages);
 
         await interaction.update({ embeds: [embed], components: [buttons] });
     } catch (error) {
@@ -236,8 +236,8 @@ const handleNextButton = async (interaction) => {
     currentPage += 1;
 
     try {
-        // Fetch all polls again
-        const query = 'SELECT id, type, active, created_at FROM polls WHERE user_id = ? AND type = ? ORDER BY created_at DESC';
+        // Fetch all polls again, including upvotes and downvotes
+        const query = 'SELECT id, type, active, created_at, upvotes, downvotes FROM polls WHERE user_id = ? AND type = ? ORDER BY created_at DESC';
         const params = [userId, type.toLowerCase()];
         const [polls] = await pool.execute(query, params);
 
@@ -259,7 +259,7 @@ const handleNextButton = async (interaction) => {
         const user = await interaction.client.users.fetch(userId);
 
         const embed = createPollEmbed(interaction, user, type, poll, currentPage, totalPages);
-        const buttons = createNavigationButtons(interaction, type, currentPage, totalPages);
+        const buttons = createNavigationButtonsFromCustomId(userId, type, currentPage, totalPages);
 
         await interaction.update({ embeds: [embed], components: [buttons] });
     } catch (error) {
@@ -271,7 +271,41 @@ const handleNextButton = async (interaction) => {
         return interaction.update({ embeds: [embed], components: [] });
     }
 };
+/**
+ * Create navigation buttons based on parsed data
+ * @param {string} userId 
+ * @param {string} type 
+ * @param {number} currentPage 
+ * @param {number} totalPages 
+ * @returns {ActionRowBuilder}
+ */
+const createNavigationButtonsFromCustomId = (userId, type, currentPage, totalPages) => {
+    const prevDisabled = currentPage === 0;
+    const nextDisabled = currentPage === totalPages - 1;
 
+    const prevButton = new ButtonBuilder()
+        .setCustomId(`voteview_prev_${userId}_${type}_${currentPage}`)
+        .setEmoji('⬅️')
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(prevDisabled);
+
+    const viewVotesButton = new ButtonBuilder()
+        .setCustomId(`voteview_viewvotes_${userId}_${type}_${currentPage}`)
+        .setLabel('View Votes')
+        .setStyle(ButtonStyle.Primary)
+        .setEmoji('🔍');
+
+    const nextButton = new ButtonBuilder()
+        .setCustomId(`voteview_next_${userId}_${type}_${currentPage}`)
+        .setEmoji('➡️')
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(nextDisabled);
+
+    const actionRow = new ActionRowBuilder()
+        .addComponents(prevButton, viewVotesButton, nextButton);
+
+    return actionRow;
+};
 /**
  * Handle View Votes Button Interaction
  * @param {ButtonInteraction} interaction 
@@ -410,8 +444,9 @@ const handleViewVotesPups = async (interaction, poll) => {
 
         if (!isOwner && !hasRole) {
             const embed = new EmbedBuilder()
-                .setDescription('No Permissions!\n> Only <@' + pollDetails.user_id + '> can click this button, or people with these roles:\n' +
-                    allowedRoles.map(roleId => `<@&${roleId}>`).join('\n'))
+            .setTitle('No Permission!')
+                .setDescription('> Only <@' + pollDetails.user_id + '> can click this button, or people with these roles:\n- ' +
+                    allowedRoles.map(roleId => `<@&${roleId}>`).join('\n- '))
                 .setColor(0xFF0000) // Red color
                 .setTimestamp();
             return interaction.editReply({ embeds: [embed], components: [] });

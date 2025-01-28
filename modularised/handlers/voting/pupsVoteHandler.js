@@ -1271,41 +1271,46 @@ const handleMyVotePagination = async (interaction) => {
 
         const poll = polls[currentPage];
         const status = poll.active ? 'active' : 'inactive';
-        const pollId = totalPages - currentPage; // Adjust Poll ID based on recency
+        const pollId = currentPage + 1; // Adjust Poll ID based on zero-based index
 
         const pollEmbed = new EmbedBuilder()
-            .setAuthor({ name: `${interaction.user.username} | PUPS Vote`, iconURL: interaction.user.displayAvatarURL() })
+            .setAuthor({ name: `${interaction.user.username} | PUPS Vote`, iconURL: interaction.user.displayAvatarURL({ dynamic: true }) })
             .setDescription(`**Poll ID:** \`${pollId}\`\n> This poll is currently __\`${status}\`__`)
             .addFields(
-                { name: 'Upvotes 👍', value: `\`\`\`${poll.upvotes}\`\`\``, inline: true },
-                { name: 'Downvotes 👎', value: `\`\`\`${poll.downvotes}\`\`\``, inline: true }
+                { name: 'Upvotes 👍', value: `\`\`\`${poll.upvotes || 0}\`\`\``, inline: true },
+                { name: 'Downvotes 👎', value: `\`\`\`${poll.downvotes || 0}\`\`\``, inline: true }
             )
-            .setFooter({ text: `Poll ${currentPage + 1}/${totalPages}`, iconURL: interaction.user.displayAvatarURL() })
+            .setFooter({ 
+                text: `Poll ${pollId}/${totalPages}`,
+                iconURL: interaction.user.displayAvatarURL({ dynamic: true })
+            })
             .setColor('#e96d6d')
             .setTimestamp();
 
+        // Create navigation buttons with consistent customIds
         const buttons = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId(`prev_myvote_pups_${initiatorId}_${currentPage}`)
                     .setEmoji('⬅️')
-                    .setStyle(ButtonStyle.Secondary)
+                    .setStyle(ButtonStyle.Primary)
                     .setDisabled(currentPage === 0),
+                new ButtonBuilder()
+                    .setCustomId(`voteview_viewvotes_${initiatorId}_pups_${currentPage}`)
+                    .setLabel('View Votes')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setEmoji('🔍'),
                 new ButtonBuilder()
                     .setCustomId(`next_myvote_pups_${initiatorId}_${currentPage}`)
                     .setEmoji('➡️')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setDisabled(currentPage === totalPages - 1),
-                new ButtonBuilder()
-                    .setCustomId(`view_votes_pups_${poll.id}`)
-                    .setLabel('View Votes')
                     .setStyle(ButtonStyle.Primary)
+                    .setDisabled(currentPage === totalPages - 1)                
             );
 
         // Edit the original message with the new embed and updated buttons
         await interaction.update({ embeds: [pollEmbed], components: [buttons] });
 
-        logger.info(`PUPS myvote pagination: user ${initiatorId} navigated to page ${currentPage + 1}/${totalPages}`);
+        logger.info(`PUPS myvote pagination: user ${initiatorId} navigated to page ${pollId}/${totalPages}`);
     } catch (error) {
         logger.error('Error handling myvote pagination:', error);
         const embed = new EmbedBuilder()

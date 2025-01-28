@@ -18,3 +18,6 @@ components[0].components[BASE_TYPE_BAD_LENGTH]: Must be between 1 and 5 in lengt
 2025-01-27 21:00:52 [ERROR] Error handling view votes for PUPS: The reply to this interaction has not been sent or deferred. node_modules\discord.js\src\structures\interfaces\InteractionResponses.js:247
 2025-01-27 21:00:52 [ERROR] Error handling interaction: Error [InteractionNotReplied]: The reply to this interaction has not been sent or deferred.
 2025-01-27 21:27:20 [ERROR] Error handling next button: Cannot read properties of undefined (reading 'getUser') handlers\voting\voteviewHandler.js:123
+2025-01-28 11:32:47 [ERROR] Error fetching polls: connect ETIMEDOUT node_modules\mysql2\lib\promise\pool.js:54
+2025-01-28 11:33:35 [ERROR] Error handling next button: Cannot read properties of undefined (reading 'getUser') handlers\voting\voteviewHandler.js:134
+2025-01-28 11:36:20 [ERROR] Error handling next button: createNavigationButtonsFromCustomId is not defined handlers\voting\voteviewHandler.js:262
