@@ -1497,11 +1497,9 @@ const handleMyVote = async (interaction) => {
         const status = poll.active ? 'active' : 'inactive';
         const user = interaction.user;
 
-        // Absolute Poll ID from the database
-        const absolutePollId = poll.id;
-
-        // Relative Poll ID (1-based index)
-        const relativePollId = currentPage + 1;
+        // Calculate Poll ID "relative to user" if you want, but that’s just a label
+        const pollIdLabel = totalPages - currentPage; 
+        // or pollIdLabel = currentPage + 1, whichever you prefer
 
         // Determine the role ID based on poll type
         const roleId = (poll.type === 'pugs_trial') ? config.pugsTrialRoleId : config.pugsRoleId;
@@ -1512,24 +1510,25 @@ const handleMyVote = async (interaction) => {
         const embedAuthorText = (poll.type === 'pugs_trial') ? 'PUGS Trial Vote' : 'PUGS Vote';
 
         const pollEmbed = new EmbedBuilder()
-            .setTitle(`Poll#${absolutePollId}`) // Added Title
             .setAuthor({ name: `${user.username} | ${embedAuthorText}`, iconURL: user.displayAvatarURL() })
             .setDescription(
-                `- **Poll ID relative to user:** \`${relativePollId}\`\n` + // Bold labels, backticks for values
-                `> **Status:** \`${status}\``
+                `- **Poll ID** relative to user: \`${pollIdLabel}\`\n` +
+                `> **Status:** This poll is currently __\`${status}\`__.\u00A0\u00A0\u00A0\u00A0\u00A0`
             )
             .addFields(
                 { name: 'Upvotes 👍',   value: `\`\`\`${poll.upvotes}\`\`\``,   inline: true },
                 { name: 'Downvotes 👎', value: `\`\`\`${poll.downvotes}\`\`\``, inline: true }
             )
             .setFooter({ 
-                text: `Poll 1/${totalPages}`, 
+                text: `Poll 1/${polls.length}`, 
                 iconURL: user.displayAvatarURL() 
             })
             .setColor(embedColor)
             .setTimestamp();
 
-        // Update button IDs to include the absolute poll ID if needed elsewhere
+        // Notice the "View Votes" button changed to:
+        // myvote_viewvotes_<poll.id>
+        // That’s all we need to fetch the poll by ID.
         const buttons = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
@@ -1583,11 +1582,11 @@ const handleMyVotePagination = async (interaction) => {
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    const action       = parts[0]; // 'next' or 'prev'
-    const type         = parts[1]; // 'myvote'
-    const pollType     = parts[2]; // 'pugs' or 'pugs_trial'
-    const initiatorId  = parts[3]; // userId
-    let currentPage    = parseInt(parts[4], 10);
+    const action      = parts[0]; // 'next' or 'prev'
+    const type        = parts[1]; // 'myvote'
+    const pollType    = parts[2]; // 'pugs' or 'pugs_trial'
+    const initiatorId = parts[3]; // userId
+    let currentPage   = parseInt(parts[4], 10);
     // parts[5] = poll.type again, but you might not even need it
 
     // Check permission
@@ -1636,8 +1635,7 @@ const handleMyVotePagination = async (interaction) => {
 
         const poll = polls[currentPage];
         const status = poll.active ? 'active' : 'inactive';
-        const relativePollId = currentPage + 1;
-        const absolutePollId = poll.id;
+        const pollIndexLabel = currentPage + 1; 
 
         // Determine embed color
         const roleId = (poll.type === 'pugs_trial') 
@@ -1651,26 +1649,23 @@ const handleMyVotePagination = async (interaction) => {
             : 'PUGS Vote';
 
         const pollEmbed = new EmbedBuilder()
-            .setTitle(`Poll#${absolutePollId}`) // Added Title
             .setAuthor({
                 name: `${interaction.user.username} | ${embedAuthorText}`,
                 iconURL: interaction.user.displayAvatarURL({ dynamic: true })
             })
-            .setDescription(
-                `- **Poll ID relative to user:** \`${relativePollId}\`\n` + // Bold labels, backticks for values
-                `> **Status:** \`${status}\``
-            )
+            .setDescription(`**Poll ID:** \`${pollIndexLabel}\`\n> **Status:** This poll is currently __\`${status}\`__`)
             .addFields(
-                { name: 'Upvotes 👍',   value: `\`\`\`${poll.upvotes || 0}\`\`\``,   inline: true },
+                { name: 'Upvotes 👍',   value: `\`\`\`${poll.upvotes   || 0}\`\`\``, inline: true },
                 { name: 'Downvotes 👎', value: `\`\`\`${poll.downvotes || 0}\`\`\``, inline: true }
             )
             .setFooter({
-                text: `Poll ${relativePollId}/${totalPages}`,
+                text: `Poll ${pollIndexLabel}/${totalPages}`,
                 iconURL: interaction.user.displayAvatarURL({ dynamic: true })
             })
             .setColor(embedColor)
             .setTimestamp();
 
+        // Notice the "View Votes" button uses poll.id
         const buttons = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
@@ -1695,7 +1690,7 @@ const handleMyVotePagination = async (interaction) => {
             components: [buttons]
         });
 
-        logger.info(`PUGS myvote pagination: user ${initiatorId} navigated to poll ${relativePollId}/${totalPages}`);
+        logger.info(`PUGS myvote pagination: user ${initiatorId} navigated to poll ${pollIndexLabel}/${totalPages}`);
 
     } catch (error) {
         logger.error('Error handling myvote pagination:', error);

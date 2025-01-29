@@ -1,10 +1,10 @@
 // handlers/voting/voteviewHandler.js
 
-const { 
-    EmbedBuilder, 
-    ActionRowBuilder, 
-    ButtonBuilder, 
-    ButtonStyle 
+const {
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle
 } = require('discord.js');
 const { pool } = require('../../utilities/database');
 const logger = require('../../utilities/logger');
@@ -18,21 +18,19 @@ const allowedRoles = [
 ];
 
 /**
- * Handle the `/voteview` command
+ * Handle the `/voteview` slash command
  * @param {CommandInteraction} interaction 
  */
 const handleVoteViewCommand = async (interaction) => {
     try {
-        // Defer the slash command to acknowledge it. 
-        // This is a PUBLIC reply by default, 
-        // so only errors afterward will be ephemeral.
+        // Acknowledge the slash command
         await interaction.deferReply(); 
 
         const user = interaction.options.getUser('user');
-        const type = interaction.options.getString('type');
+        const typeInput = interaction.options.getString('type');
 
         // Basic validation
-        if (!user || !type) {
+        if (!user || !typeInput) {
             const embed = new EmbedBuilder()
                 .setDescription('Please provide both a user and a type.')
                 .setColor(0x980e00)
@@ -55,9 +53,9 @@ const handleVoteViewCommand = async (interaction) => {
             return interaction.editReply({ embeds: [embed], ephemeral: true });
         }
 
-        // Validate type
+        // Validate type input
         const validTypes = ['pups', 'pugs', 'pugs_trial'];
-        if (!validTypes.includes(type.toLowerCase())) {
+        if (!validTypes.includes(typeInput.toLowerCase())) {
             const embed = new EmbedBuilder()
                 .setDescription('Invalid type provided. Please choose either `pups`, `pugs`, or `pugs_trial`.')
                 .setColor(0x980e00)
@@ -65,17 +63,31 @@ const handleVoteViewCommand = async (interaction) => {
             return interaction.editReply({ embeds: [embed], ephemeral: true });
         }
 
-        // Fetch polls for this user+type
+        // Decide which poll types to query
+        let pollTypes = [];
+        const lowered = typeInput.toLowerCase();
+        if (lowered === 'pups') {
+            pollTypes = ['pups'];
+        } else if (lowered === 'pugs') {
+            // user wants BOTH pugs + pugs_trial
+            pollTypes = ['pugs', 'pugs_trial'];
+        } else if (lowered === 'pugs_trial') {
+            pollTypes = ['pugs_trial'];
+        }
+
+        // Build a dynamic IN (...) query for pollTypes
+        const placeholders = pollTypes.map(() => '?').join(',');
         const query = `
-            SELECT id, type, active, created_at, upvotes, downvotes
+            SELECT 
+                id, user_id, type, active, created_at, upvotes, downvotes
             FROM polls
             WHERE user_id = ?
-              AND type = ?
+              AND type IN (${placeholders})
             ORDER BY created_at DESC
         `;
-        const params = [user.id, type.toLowerCase()];
+        const params = [user.id, ...pollTypes];
         logger.info(`Executing query: ${query} with params: ${JSON.stringify(params)}`);
-        
+
         const [polls] = await pool.execute(query, params);
         logger.info(`Number of polls fetched: ${polls.length}`);
 
@@ -90,13 +102,14 @@ const handleVoteViewCommand = async (interaction) => {
         // Show first poll
         const currentPage = 0;
         const totalPages = polls.length;
-        const firstPoll = polls[currentPage];
+        const firstPoll = polls[0];
 
-        const embed = createPollEmbed(interaction, user, type, firstPoll, currentPage, totalPages);
-        const buttons = createNavigationButtons(interaction, type, currentPage, totalPages);
+        // Create the embed from the actual poll type
+        const embed = createPollEmbed(interaction, user, firstPoll, currentPage, totalPages);
+        // Build next/prev/view votes buttons
+        const buttons = createNavigationButtons(user.id, pollTypes, currentPage, totalPages);
 
-        // The final success reply is public (or non-ephemeral). 
-        // If you want it ephemeral, add ephemeral: true here.
+        // Send the final message (public by default, or ephemeral: true if you want)
         await interaction.editReply({ embeds: [embed], components: [buttons] });
 
     } catch (error) {
@@ -110,89 +123,91 @@ const handleVoteViewCommand = async (interaction) => {
 };
 
 /**
- * Create an embed for a specific poll
- * @param {CommandInteraction} interaction 
- * @param {User} user 
- * @param {string} type 
- * @param {Object} poll 
- * @param {number} currentPage 
- * @param {number} totalPages 
- * @returns {EmbedBuilder}
+ * Create an embed for a poll, using poll.type to pick color/text
+ * @param {Interaction} interaction
+ * @param {User} user
+ * @param {Object} poll - The poll row
+ * @param {number} currentPage
+ * @param {number} totalPages
  */
-function createPollEmbed(interaction, user, type, poll, currentPage, totalPages) {
-    const pollId = currentPage + 1;  // 1-based index
-
+function createPollEmbed(interaction, user, poll, currentPage, totalPages) {
+    const pollIndexLabel = currentPage + 1; // 1-based
     const pollStatus = poll.active ? 'active' : 'inactive';
-    let roleColor = '#e96d6d'; 
-    let embedAuthorText = `${type.charAt(0).toUpperCase() + type.slice(1)} Vote`;
 
-    if (type.toLowerCase() === 'pups') {
+    // Determine color & heading
+    let embedColor = '#e96d6d';
+    let embedAuthorText = 'Vote';
+
+    if (poll.type === 'pups') {
         const pupsRole = interaction.guild.roles.cache.get(config.pupsRoleId);
-        if (pupsRole) roleColor = pupsRole.color;
-    } else if (type.toLowerCase() === 'pugs') {
+        embedColor = pupsRole ? pupsRole.color : '#e96d6d';
+        embedAuthorText = 'PUPS Vote';
+    } else if (poll.type === 'pugs') {
         const pugsRole = interaction.guild.roles.cache.get(config.pugsRoleId);
-        if (pugsRole) roleColor = pugsRole.color;
-    } else if (type.toLowerCase() === 'pugs_trial') {
-        const pugsTrialRole = interaction.guild.roles.cache.get(config.pugsTrialRoleId);
-        if (pugsTrialRole) roleColor = pugsTrialRole.color;
+        embedColor = pugsRole ? pugsRole.color : '#e96d6d';
+        embedAuthorText = 'PUGS Vote';
+    } else if (poll.type === 'pugs_trial') {
+        const trialRole = interaction.guild.roles.cache.get(config.pugsTrialRoleId);
+        embedColor = trialRole ? trialRole.color : '#e96d6d';
         embedAuthorText = 'PUGS Trial Vote';
     }
 
     return new EmbedBuilder()
-        .setAuthor({ 
-            name: `${user.username} | ${embedAuthorText}`, 
-            iconURL: user.displayAvatarURL({ dynamic: true }) 
-        })
-        .setDescription(
-            `- **Poll ID** relative to user: \`${pollId}\`\n` +
-            `> This poll is currently __\`${pollStatus}\`__.\u00A0\u00A0\u00A0\u00A0\u00A0`
-        )
-        .addFields(
-            { name: 'Upvotes 👍',   value: `\`\`\`${poll.upvotes}\`\`\``, inline: true },
-            { name: 'Downvotes 💔', value: `\`\`\`${poll.downvotes}\`\`\``, inline: true }
-        )
-        .setFooter({ 
-            text: `Poll ${pollId}/${totalPages}`, 
+        .setAuthor({
+            name: `${user.username} | ${embedAuthorText}`,
             iconURL: user.displayAvatarURL({ dynamic: true })
         })
-        .setColor(roleColor)
+        .setDescription(
+            `- **Poll ID** (relative to user): \`${pollIndexLabel}\`\n` +
+            `> This poll is currently __\`${pollStatus}\`__.\n`
+        )
+        .addFields(
+            { name: 'Upvotes 👍',    value: `\`\`\`${poll.upvotes}\`\`\``,    inline: true },
+            { name: 'Downvotes 👎', value: `\`\`\`${poll.downvotes}\`\`\``, inline: true }
+        )
+        .setFooter({
+            text: `Poll ${pollIndexLabel}/${totalPages}`,
+            iconURL: user.displayAvatarURL({ dynamic: true })
+        })
+        .setColor(embedColor)
         .setTimestamp();
 }
 
 /**
- * Create the initial navigation buttons
- * @param {CommandInteraction} interaction 
- * @param {string} type 
- * @param {number} currentPage 
- * @param {number} totalPages 
+ * Create navigation buttons for the poll listing
+ * @param {string} userId
+ * @param {string[]} pollTypes - e.g. ["pugs","pugs_trial"] or ["pups"]
+ * @param {number} currentPage
+ * @param {number} totalPages
  * @returns {ActionRowBuilder}
  */
-function createNavigationButtons(interaction, type, currentPage, totalPages) {
-    const userId = interaction.options.getUser('user').id;
+function createNavigationButtons(userId, pollTypes, currentPage, totalPages) {
+    // Join pollTypes with + => "pugs+pugs_trial"
+    // Then we store that in the customId along with the currentPage
+    const pollTypesJoined = pollTypes.join('+');
+
+    const prevDisabled = (currentPage === 0);
+    const nextDisabled = (currentPage === totalPages - 1);
 
     const prevButton = new ButtonBuilder()
-        .setCustomId(`voteview_prev_${userId}_${type}_${currentPage}`)
+        .setCustomId(`voteview_prev_${userId}_${pollTypesJoined}_${currentPage}`)
         .setEmoji('⬅️')
         .setStyle(ButtonStyle.Secondary)
-        .setDisabled(currentPage === 0);
+        .setDisabled(prevDisabled);
 
     const viewVotesButton = new ButtonBuilder()
-        .setCustomId(`voteview_viewvotes_${userId}_${type}_${currentPage}`)
+        .setCustomId(`voteview_viewvotes_${userId}_${pollTypesJoined}_${currentPage}`)
         .setLabel('View Votes')
         .setStyle(ButtonStyle.Primary)
         .setEmoji('🔍');
 
     const nextButton = new ButtonBuilder()
-        .setCustomId(`voteview_next_${userId}_${type}_${currentPage}`)
+        .setCustomId(`voteview_next_${userId}_${pollTypesJoined}_${currentPage}`)
         .setEmoji('➡️')
         .setStyle(ButtonStyle.Secondary)
-        .setDisabled(currentPage === totalPages - 1);
+        .setDisabled(nextDisabled);
 
-    return new ActionRowBuilder().addComponents(
-        prevButton,
-        viewVotesButton,
-        nextButton
-    );
+    return new ActionRowBuilder().addComponents(prevButton, viewVotesButton, nextButton);
 }
 
 /**
@@ -200,10 +215,12 @@ function createNavigationButtons(interaction, type, currentPage, totalPages) {
  * @param {ButtonInteraction} interaction
  */
 const handlePrevButton = async (interaction) => {
-    const customId = interaction.customId; 
-    // Format: "voteview_prev_USERID_TYPE_CURRENTPAGE"
+    const customId = interaction.customId;
+    // e.g. "voteview_prev_<userId>_pugs+pugs_trial_<page>"
     const parts = customId.split('_');
-    if (parts.length !== 5) {
+
+    // We need at least 5 parts for a valid customId
+    if (parts.length < 5) {
         logger.warn(`Invalid customId for previous button: ${customId}`);
         const embed = new EmbedBuilder()
             .setDescription('Invalid interaction.')
@@ -213,11 +230,9 @@ const handlePrevButton = async (interaction) => {
     }
 
     const userId = parts[2];
-    const type = parts[3];
-    let currentPage = parseInt(parts[4], 10);
-
-    // Basic validation
-    if (isNaN(currentPage) || currentPage <= 0) {
+    // The last part is currentPage
+    let currentPage = parseInt(parts[parts.length - 1], 10);
+    if (isNaN(currentPage)) {
         logger.warn(`Invalid page number in customId: ${customId}`);
         const embed = new EmbedBuilder()
             .setDescription('Invalid page number.')
@@ -226,17 +241,27 @@ const handlePrevButton = async (interaction) => {
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
+    // The middle chunk is pollTypesJoined
+    // e.g. "pugs+pugs_trial"
+    const pollTypesJoined = parts.slice(3, parts.length - 1).join('_');
+    const pollTypesArray = pollTypesJoined.split('+');
+
+    // Decrement page
     currentPage -= 1;
+    if (currentPage < 0) currentPage = 0; // clamp
 
     try {
+        // Re-fetch polls matching these types
+        const placeholders = pollTypesArray.map(() => '?').join(',');
         const query = `
-            SELECT id, type, active, created_at, upvotes, downvotes
+            SELECT id, user_id, type, active, created_at, upvotes, downvotes
             FROM polls
             WHERE user_id = ?
-              AND type = ?
+              AND type IN (${placeholders})
             ORDER BY created_at DESC
         `;
-        const [polls] = await pool.execute(query, [userId, type.toLowerCase()]);
+        const params = [userId, ...pollTypesArray];
+        const [polls] = await pool.execute(query, params);
 
         if (polls.length === 0) {
             const embed = new EmbedBuilder()
@@ -248,16 +273,12 @@ const handlePrevButton = async (interaction) => {
 
         const totalPages = polls.length;
         const poll = polls[currentPage];
-        
-        // Fetch the user so we can display their avatar, etc.
         const user = await interaction.client.users.fetch(userId);
 
-        const embed = createPollEmbed(interaction, user, type, poll, currentPage, totalPages);
-        const buttons = createNavigationButtonsFromCustomId(userId, type, currentPage, totalPages);
+        const embed = createPollEmbed(interaction, user, poll, currentPage, totalPages);
+        const buttons = createNavigationButtons(userId, pollTypesArray, currentPage, totalPages);
 
-        // Use update to alter the existing message
         await interaction.update({ embeds: [embed], components: [buttons] });
-
     } catch (error) {
         logger.error('Error handling previous button:', error);
         const embed = new EmbedBuilder()
@@ -273,10 +294,11 @@ const handlePrevButton = async (interaction) => {
  * @param {ButtonInteraction} interaction
  */
 const handleNextButton = async (interaction) => {
-    const customId = interaction.customId; 
-    // Format: "voteview_next_USERID_TYPE_CURRENTPAGE"
+    const customId = interaction.customId;
+    // e.g. "voteview_next_<userId>_pugs+pugs_trial_<page>"
     const parts = customId.split('_');
-    if (parts.length !== 5) {
+
+    if (parts.length < 5) {
         logger.warn(`Invalid customId for next button: ${customId}`);
         const embed = new EmbedBuilder()
             .setDescription('Invalid interaction.')
@@ -286,10 +308,7 @@ const handleNextButton = async (interaction) => {
     }
 
     const userId = parts[2];
-    const type = parts[3];
-    let currentPage = parseInt(parts[4], 10);
-
-    // Basic validation
+    let currentPage = parseInt(parts[parts.length - 1], 10);
     if (isNaN(currentPage)) {
         logger.warn(`Invalid page number in customId: ${customId}`);
         const embed = new EmbedBuilder()
@@ -299,17 +318,24 @@ const handleNextButton = async (interaction) => {
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
+    // Re-join middle chunk => pollTypes
+    const pollTypesJoined = parts.slice(3, parts.length - 1).join('_');
+    const pollTypesArray = pollTypesJoined.split('+');
+
     currentPage += 1;
 
     try {
+        const placeholders = pollTypesArray.map(() => '?').join(',');
         const query = `
-            SELECT id, type, active, created_at, upvotes, downvotes
+            SELECT 
+                id, user_id, type, active, created_at, upvotes, downvotes
             FROM polls
             WHERE user_id = ?
-              AND type = ?
+              AND type IN (${placeholders})
             ORDER BY created_at DESC
         `;
-        const [polls] = await pool.execute(query, [userId, type.toLowerCase()]);
+        const params = [userId, ...pollTypesArray];
+        const [polls] = await pool.execute(query, params);
 
         if (polls.length === 0) {
             const embed = new EmbedBuilder()
@@ -332,8 +358,8 @@ const handleNextButton = async (interaction) => {
         const poll = polls[currentPage];
         const user = await interaction.client.users.fetch(userId);
 
-        const embed = createPollEmbed(interaction, user, type, poll, currentPage, totalPages);
-        const buttons = createNavigationButtonsFromCustomId(userId, type, currentPage, totalPages);
+        const embed = createPollEmbed(interaction, user, poll, currentPage, totalPages);
+        const buttons = createNavigationButtons(userId, pollTypesArray, currentPage, totalPages);
 
         await interaction.update({ embeds: [embed], components: [buttons] });
     } catch (error) {
@@ -347,69 +373,18 @@ const handleNextButton = async (interaction) => {
 };
 
 /**
- * Create navigation buttons for updated page
- * @param {string} userId 
- * @param {string} type 
- * @param {number} currentPage 
- * @param {number} totalPages 
- * @returns {ActionRowBuilder}
- */
-function createNavigationButtonsFromCustomId(userId, type, currentPage, totalPages) {
-    const prevDisabled = currentPage === 0;
-    const nextDisabled = currentPage === totalPages - 1;
-
-    const prevButton = new ButtonBuilder()
-        .setCustomId(`voteview_prev_${userId}_${type}_${currentPage}`)
-        .setEmoji('⬅️')
-        .setStyle(ButtonStyle.Secondary)
-        .setDisabled(prevDisabled);
-
-    const viewVotesButton = new ButtonBuilder()
-        .setCustomId(`voteview_viewvotes_${userId}_${type}_${currentPage}`)
-        .setLabel('View Votes')
-        .setStyle(ButtonStyle.Primary)
-        .setEmoji('🔍');
-
-    const nextButton = new ButtonBuilder()
-        .setCustomId(`voteview_next_${userId}_${type}_${currentPage}`)
-        .setEmoji('➡️')
-        .setStyle(ButtonStyle.Secondary)
-        .setDisabled(nextDisabled);
-
-    return new ActionRowBuilder().addComponents(
-        prevButton,
-        viewVotesButton,
-        nextButton
-    );
-}
-
-/**
- * Handle View Votes Button Interaction
- * @param {ButtonInteraction} interaction 
+ * Handle the View Votes Button Interaction
+ * @param {ButtonInteraction} interaction
  */
 const handleViewVotesButton = async (interaction) => {
     try {
-        // Defer once, ephemeral for the "View Votes" detail
         await interaction.deferReply({ ephemeral: true });
 
-        const customId = interaction.customId; 
-        // e.g. "voteview_viewvotes_1164041015389339698_pugs_trial_1"
+        const customId = interaction.customId;
+        // e.g. "voteview_viewvotes_<userId>_pugs+pugs_trial_<page>"
         const parts = customId.split('_');
-
-        // Must begin with "voteview_viewvotes"
-        if (parts[0] !== 'voteview' || parts[1] !== 'viewvotes') {
-            logger.warn(`Invalid customId prefix for view votes button: ${customId}`);
-            const embed = new EmbedBuilder()
-                .setDescription('Invalid view votes interaction.')
-                .setColor(0x980e00)
-                .setTimestamp();
-            return interaction.editReply({ embeds: [embed] });
-        }
-
-        // We need at least 5 parts:
-        // [ "voteview", "viewvotes", <userID>, <type...>, <page> ]
         if (parts.length < 5) {
-            logger.warn(`Invalid customId length for view votes button: ${customId}`);
+            logger.warn(`Invalid customId for view votes button: ${customId}`);
             const embed = new EmbedBuilder()
                 .setDescription('Invalid view votes interaction.')
                 .setColor(0x980e00)
@@ -417,13 +392,10 @@ const handleViewVotesButton = async (interaction) => {
             return interaction.editReply({ embeds: [embed] });
         }
 
-        // 3rd part is userId, last part is page
         const userId = parts[2];
-        const pageStr = parts[parts.length - 1];
-        const currentPage = parseInt(pageStr, 10);
-
+        const currentPage = parseInt(parts[parts.length - 1], 10);
         if (isNaN(currentPage)) {
-            logger.warn(`Invalid page number in customId: ${customId}`);
+            logger.warn(`Invalid page number: ${customId}`);
             const embed = new EmbedBuilder()
                 .setDescription('Invalid page number.')
                 .setColor(0x980e00)
@@ -431,25 +403,23 @@ const handleViewVotesButton = async (interaction) => {
             return interaction.editReply({ embeds: [embed] });
         }
 
-        // Join everything between index=3 and the last part as the type
-        const typeParts = parts.slice(3, parts.length - 1);
-        const type = typeParts.join('_').toLowerCase();
+        // Middle chunk => "pugs+pugs_trial" etc.
+        const pollTypesJoined = parts.slice(3, parts.length - 1).join('_');
+        const pollTypesArray = pollTypesJoined.split('+');
 
-        // Fetch the polls
+        // Re-fetch the same poll list
+        const placeholders = pollTypesArray.map(() => '?').join(',');
         const query = `
             SELECT 
-                id,
-                user_id,
-                type,
-                active,
-                created_at
+                id, user_id, type, active, created_at
             FROM polls
             WHERE user_id = ?
-              AND type = ?
+              AND type IN (${placeholders})
             ORDER BY created_at DESC
         `;
-        const [polls] = await pool.execute(query, [userId, type]);
-        
+        const params = [userId, ...pollTypesArray];
+        const [polls] = await pool.execute(query, params);
+
         if (polls.length === 0 || currentPage >= polls.length) {
             const embed = new EmbedBuilder()
                 .setDescription('No polls found for this user and type, or invalid page.')
@@ -460,9 +430,9 @@ const handleViewVotesButton = async (interaction) => {
 
         const poll = polls[currentPage];
         // Route to the correct sub-handler
-        if (poll.type.toLowerCase() === 'pups') {
+        if (poll.type === 'pups') {
             return handleViewVotesPups(interaction, poll);
-        } else if (poll.type.toLowerCase() === 'pugs' || poll.type.toLowerCase() === 'pugs_trial') {
+        } else if (poll.type === 'pugs' || poll.type === 'pugs_trial') {
             return handleViewVotesPugs(interaction, poll);
         } else {
             const embed = new EmbedBuilder()
@@ -485,7 +455,7 @@ const handleViewVotesButton = async (interaction) => {
 /**
  * Handle Viewing Votes for PUPS
  * @param {ButtonInteraction} interaction 
- * @param {Object} poll   // includes id, user_id, type, etc.
+ * @param {Object} poll  // includes id, user_id, type, etc.
  */
 const handleViewVotesPups = async (interaction, poll) => {
     try {
@@ -522,7 +492,7 @@ const handleViewVotesPups = async (interaction, poll) => {
             ? downvoters.map(v => `- <@${v.user_id}>`).join('\n')
             : '• No downvotes yet.';
 
-        // Grab pollOwner from the guild
+        // Poll owner
         let pollOwner = null;
         try {
             pollOwner = await interaction.guild.members.fetch(pollDetails.user_id);
@@ -531,7 +501,7 @@ const handleViewVotesPups = async (interaction, poll) => {
             logger.error(`Poll owner with ID ${pollDetails.user_id} not found.`);
         }
 
-        // All polls for user + type
+        // All polls for user + type = pups
         const [allPolls] = await pool.execute(
             'SELECT id FROM polls WHERE user_id = ? AND type = "pups" ORDER BY created_at DESC',
             [pollDetails.user_id]
@@ -563,15 +533,14 @@ const handleViewVotesPups = async (interaction, poll) => {
             return interaction.editReply({ embeds: [embed], components: [] });
         }
 
-        // Determine color from pups role
+        // Color from pups role
         const pupsRole = interaction.guild.roles.cache.get(config.pupsRoleId);
-        const embedColor = pupsRole ? pupsRole.color : 0xFFD700; // fallback
+        const embedColor = pupsRole ? pupsRole.color : 0xFFD700;
 
-        // Build the embed
         const embed = new EmbedBuilder()
             .setAuthor({
                 name: pollOwner ? pollOwner.user.username : 'Unknown User',
-                iconURL: pollOwner 
+                iconURL: pollOwner
                     ? pollOwner.user.displayAvatarURL()
                     : interaction.guild.iconURL()
             })
@@ -581,7 +550,7 @@ const handleViewVotesPups = async (interaction, poll) => {
             )
             .setFooter({
                 text: `Poll ${currentPollIndex}/${totalPolls}`,
-                iconURL: pollOwner 
+                iconURL: pollOwner
                     ? pollOwner.user.displayAvatarURL()
                     : interaction.guild.iconURL()
             })
@@ -589,7 +558,6 @@ const handleViewVotesPups = async (interaction, poll) => {
             .setTimestamp();
 
         await interaction.editReply({ embeds: [embed], components: [] });
-
     } catch (error) {
         logger.error('Error handling view votes for PUPS:', error);
         const embed = new EmbedBuilder()
@@ -607,10 +575,9 @@ const handleViewVotesPups = async (interaction, poll) => {
  */
 const handleViewVotesPugs = async (interaction, poll) => {
     try {
-        // No second defer needed; we already did it in handleViewVotesButton
         const userId = poll.user_id;
 
-        // Confirm the poll belongs to userId, and is pugs or pugs_trial
+        // Confirm poll belongs to userId and is pugs or pugs_trial
         const [pollRows] = await pool.execute(
             'SELECT * FROM polls WHERE id = ? AND user_id = ? AND (type = "pugs" OR type = "pugs_trial")',
             [poll.id, userId]
@@ -625,7 +592,7 @@ const handleViewVotesPugs = async (interaction, poll) => {
 
         const pollDetails = pollRows[0];
 
-        // Up/down voters
+        // Fetch up/downvoters
         const [upvoters] = await pool.execute(
             'SELECT user_id FROM votes WHERE poll_id = ? AND vote = "upvote"',
             [poll.id]
@@ -651,7 +618,7 @@ const handleViewVotesPugs = async (interaction, poll) => {
             logger.error(`Poll owner with ID ${pollDetails.user_id} not found.`);
         }
 
-        // All pugs or pugs_trial polls for user
+        // All pugs or pugs_trial polls for that user
         const [allPolls] = await pool.execute(
             'SELECT id FROM polls WHERE user_id = ? AND type IN ("pugs", "pugs_trial") ORDER BY created_at DESC',
             [pollDetails.user_id]
@@ -659,7 +626,7 @@ const handleViewVotesPugs = async (interaction, poll) => {
         const totalPolls = allPolls.length;
         const currentPollIndex = allPolls.findIndex(p => p.id === poll.id) + 1;
         if (currentPollIndex === 0) {
-            logger.warn(`Poll ID ${poll.id} not found in user poll list.`);
+            logger.warn(`Poll ID ${poll.id} not found in the user's poll list.`);
             const embed = new EmbedBuilder()
                 .setDescription('Poll not found in your poll list.')
                 .setColor(0x980e00)
@@ -667,7 +634,7 @@ const handleViewVotesPugs = async (interaction, poll) => {
             return interaction.editReply({ embeds: [embed], components: [] });
         }
 
-        // Check permission: either pollOwner or an allowed manager role
+        // Permission check
         const member = interaction.member;
         const isOwner = (member.id === pollDetails.user_id);
         const hasRole = member.roles.cache.some(r => allowedRoles.includes(r.id));
@@ -683,23 +650,21 @@ const handleViewVotesPugs = async (interaction, poll) => {
             return interaction.editReply({ embeds: [embed], components: [] });
         }
 
-        // Figure out the color
-        const roleId = poll.type === 'pugs_trial'
+        // Color for pugs or pugs_trial
+        const roleId = (poll.type === 'pugs_trial') 
             ? config.pugsTrialRoleId 
             : config.pugsRoleId;
         const role = interaction.guild.roles.cache.get(roleId);
         const embedColor = role ? role.color : 0xFFD700;
 
-        // Determine embed heading
-        const embedAuthorText = (poll.type === 'pugs_trial') 
-            ? 'PUGS Trial Vote' 
+        const embedAuthorText = (poll.type === 'pugs_trial')
+            ? 'PUGS Trial Vote'
             : 'PUGS Vote';
 
-        // Build embed
         const embed = new EmbedBuilder()
             .setAuthor({
                 name: pollOwner ? pollOwner.user.username : 'Unknown User',
-                iconURL: pollOwner 
+                iconURL: pollOwner
                     ? pollOwner.user.displayAvatarURL()
                     : interaction.guild.iconURL()
             })
@@ -709,7 +674,7 @@ const handleViewVotesPugs = async (interaction, poll) => {
             )
             .setFooter({
                 text: `Poll ${currentPollIndex}/${totalPolls}`,
-                iconURL: pollOwner 
+                iconURL: pollOwner
                     ? pollOwner.user.displayAvatarURL()
                     : interaction.guild.iconURL()
             })
@@ -717,7 +682,6 @@ const handleViewVotesPugs = async (interaction, poll) => {
             .setTimestamp();
 
         await interaction.editReply({ embeds: [embed], components: [] });
-
     } catch (error) {
         logger.error('Error handling view votes for PUGS:', error);
         const embed = new EmbedBuilder()
@@ -728,7 +692,7 @@ const handleViewVotesPugs = async (interaction, poll) => {
     }
 };
 
-// Finally, export everything
+// Export all handlers
 module.exports = {
     handleVoteViewCommand,
     handlePrevButton,

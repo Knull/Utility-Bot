@@ -905,3 +905,115 @@ embeds[0].description[BASE_TYPE_REQUIRED]: This field is required
 2025-01-29 17:25:48 [INFO] Poll owner fetched: knull._
 2025-01-29 17:26:01 [INFO] Button Interaction Received: customId = myvote_viewvotes_179
 2025-01-29 17:26:01 [INFO] Handler found for prefix: myvote_viewvotes
+2025-01-29 17:44:42 [INFO] Button Interaction Received: customId = myvote_viewvotes_179
+2025-01-29 17:44:42 [INFO] Handler found for prefix: myvote_viewvotes
+2025-01-29 18:17:33 [INFO] Button Interaction Received: customId = myvote_viewvotes_179
+2025-01-29 18:17:33 [INFO] Handler found for prefix: myvote_viewvotes
+2025-01-29 18:17:37 [INFO] Button Interaction Received: customId = myvote_viewvotes_179
+2025-01-29 18:17:37 [INFO] Handler found for prefix: myvote_viewvotes
+2025-01-29 20:15:23 [INFO] Button Interaction Received: customId = myvote_viewvotes_179
+2025-01-29 20:15:23 [INFO] Handler found for prefix: myvote_viewvotes
+2025-01-29 20:18:20 [INFO] Button Interaction Received: customId = next_myvote_pugs_1164041015389339698_0_pugs
+2025-01-29 20:18:20 [INFO] Handler found for prefix: next_myvote_pugs
+2025-01-29 20:18:21 [INFO] PUGS myvote pagination: user 1164041015389339698 navigated to poll 2/2
+2025-01-29 20:18:23 [INFO] Button Interaction Received: customId = prev_myvote_pugs_1164041015389339698_1_pugs_trial
+2025-01-29 20:18:23 [INFO] Handler found for prefix: prev_myvote_pugs
+2025-01-29 20:18:24 [INFO] PUGS myvote pagination: user 1164041015389339698 navigated to poll 1/2
+2025-01-29 20:19:21 [INFO] Button Interaction Received: customId = next_myvote_pugs_1164041015389339698_0_pugs
+2025-01-29 20:19:21 [INFO] Handler found for prefix: next_myvote_pugs
+2025-01-29 20:19:22 [INFO] PUGS myvote pagination: user 1164041015389339698 navigated to poll 2/2
+2025-01-29 20:19:23 [INFO] Button Interaction Received: customId = myvote_viewvotes_179
+2025-01-29 20:19:23 [INFO] Handler found for prefix: myvote_viewvotes
+2025-01-29 20:19:25 [INFO] Button Interaction Received: customId = prev_myvote_pugs_1164041015389339698_1_pugs_trial
+2025-01-29 20:19:25 [INFO] Handler found for prefix: prev_myvote_pugs
+2025-01-29 20:19:26 [INFO] PUGS myvote pagination: user 1164041015389339698 navigated to poll 1/2
+2025-01-29 20:19:27 [INFO] Button Interaction Received: customId = myvote_viewvotes_183
+2025-01-29 20:19:27 [INFO] Handler found for prefix: myvote_viewvotes
+2025-01-29 20:19:57 [INFO] Executing query: 
+            SELECT id, type, active, created_at, upvotes, downvotes
+            FROM polls
+            WHERE user_id = ?
+              AND type = ?
+            ORDER BY created_at DESC
+         with params: ["1323540254522740777","pugs"]
+2025-01-29 20:19:58 [INFO] Number of polls fetched: 2
+2025-01-29 20:20:03 [INFO] Button Interaction Received: customId = voteview_next_1323540254522740777_pugs_0
+2025-01-29 20:20:03 [INFO] Handler found for prefix: voteview_next
+2025-01-29 20:20:07 [INFO] Button Interaction Received: customId = voteview_prev_1323540254522740777_pugs_1
+2025-01-29 20:20:07 [INFO] Handler found for prefix: voteview_prev
+2025-01-29 20:20:15 [INFO] Executing query: 
+            SELECT id, type, active, created_at, upvotes, downvotes
+            FROM polls
+            WHERE user_id = ?
+              AND type = ?
+            ORDER BY created_at DESC
+         with params: ["1164041015389339698","pugs"]
+2025-01-29 20:20:16 [INFO] Number of polls fetched: 1
+2025-01-29 20:20:49 [INFO] Executing query: 
+            SELECT id, type, active, created_at, upvotes, downvotes
+            FROM polls
+            WHERE user_id = ?
+              AND type = ?
+            ORDER BY created_at DESC
+         with params: ["536991182035746816","pugs"]
+2025-01-29 20:20:49 [INFO] Number of polls fetched: 0
+2025-01-29 20:20:58 [INFO] Button Interaction Received: customId = voteview_viewvotes_1164041015389339698_pugs_0
+2025-01-29 20:20:58 [INFO] Handler found for prefix: voteview_viewvotes
+2025-01-29 20:21:00 [INFO] Poll owner fetched: kingalloy8921
+2025-01-29 20:40:00 [INFO] Executing query: 
+            SELECT 
+                id, user_id, type, active, created_at, upvotes, downvotes
+            FROM polls
+            WHERE user_id = ?
+              AND type IN (?,?)
+            ORDER BY created_at DESC
+         with params: ["1164041015389339698","pugs","pugs_trial"]
+2025-01-29 20:40:01 [INFO] Number of polls fetched: 2
+2025-01-29 20:40:05 [INFO] Button Interaction Received: customId = voteview_next_1164041015389339698_pugs+pugs_trial_0
+2025-01-29 20:40:05 [INFO] Handler found for prefix: voteview_next
+2025-01-29 20:40:05 [WARN] Invalid customId for next button: voteview_next_1164041015389339698_pugs+pugs_trial_0
+2025-01-29 20:41:15 [INFO] Button Interaction Received: customId = voteview_next_1164041015389339698_pugs+pugs_trial_0
+2025-01-29 20:41:15 [INFO] Handler found for prefix: voteview_next
+2025-01-29 20:41:15 [WARN] Invalid customId for next button: voteview_next_1164041015389339698_pugs+pugs_trial_0
+2025-01-29 20:41:21 [INFO] Button Interaction Received: customId = voteview_viewvotes_1164041015389339698_pugs+pugs_trial_0
+2025-01-29 20:41:21 [INFO] Handler found for prefix: voteview_viewvotes
+2025-01-29 20:41:21 [WARN] Invalid customId for view votes button: voteview_viewvotes_1164041015389339698_pugs+pugs_trial_0
+2025-01-29 22:23:50 [INFO] Button Interaction Received: customId = myvote_viewvotes_183
+2025-01-29 22:23:50 [INFO] Handler found for prefix: myvote_viewvotes
+2025-01-29 22:24:08 [INFO] Button Interaction Received: customId = myvote_viewvotes_183
+2025-01-29 22:24:08 [INFO] Handler found for prefix: myvote_viewvotes
+2025-01-29 22:24:12 [INFO] Button Interaction Received: customId = next_myvote_pugs_1164041015389339698_0_pugs
+2025-01-29 22:24:12 [INFO] Handler found for prefix: next_myvote_pugs
+2025-01-29 22:24:13 [INFO] PUGS myvote pagination: user 1164041015389339698 navigated to poll 2/2
+2025-01-29 22:24:15 [INFO] Button Interaction Received: customId = myvote_viewvotes_179
+2025-01-29 22:24:15 [INFO] Handler found for prefix: myvote_viewvotes
+2025-01-29 22:24:34 [INFO] Executing query: 
+            SELECT 
+                id, user_id, type, active, created_at, upvotes, downvotes
+            FROM polls
+            WHERE user_id = ?
+              AND type IN (?,?)
+            ORDER BY created_at DESC
+         with params: ["1323540254522740777","pugs","pugs_trial"]
+2025-01-29 22:24:34 [INFO] Number of polls fetched: 3
+2025-01-29 22:24:36 [INFO] Button Interaction Received: customId = voteview_next_1323540254522740777_pugs+pugs_trial_0
+2025-01-29 22:24:36 [INFO] Handler found for prefix: voteview_next
+2025-01-29 22:24:39 [INFO] Button Interaction Received: customId = voteview_next_1323540254522740777_pugs+pugs_trial_1
+2025-01-29 22:24:39 [INFO] Handler found for prefix: voteview_next
+2025-01-29 22:24:42 [INFO] Button Interaction Received: customId = voteview_prev_1323540254522740777_pugs+pugs_trial_2
+2025-01-29 22:24:42 [INFO] Handler found for prefix: voteview_prev
+2025-01-29 22:24:43 [INFO] Button Interaction Received: customId = voteview_prev_1323540254522740777_pugs+pugs_trial_1
+2025-01-29 22:24:43 [INFO] Handler found for prefix: voteview_prev
+2025-01-29 22:24:45 [INFO] Button Interaction Received: customId = voteview_viewvotes_1323540254522740777_pugs+pugs_trial_0
+2025-01-29 22:24:45 [INFO] Handler found for prefix: voteview_viewvotes
+2025-01-29 22:24:47 [INFO] Poll owner fetched: util testing
+2025-01-29 22:25:37 [INFO] Button Interaction Received: customId = voteview_next_1323540254522740777_pugs+pugs_trial_0
+2025-01-29 22:25:37 [INFO] Handler found for prefix: voteview_next
+2025-01-29 22:25:39 [INFO] Button Interaction Received: customId = voteview_viewvotes_1323540254522740777_pugs+pugs_trial_1
+2025-01-29 22:25:39 [INFO] Handler found for prefix: voteview_viewvotes
+2025-01-29 22:25:41 [INFO] Poll owner fetched: util testing
+2025-01-29 22:25:41 [INFO] Button Interaction Received: customId = voteview_next_1323540254522740777_pugs+pugs_trial_1
+2025-01-29 22:25:41 [INFO] Handler found for prefix: voteview_next
+2025-01-29 22:25:43 [INFO] Button Interaction Received: customId = voteview_viewvotes_1323540254522740777_pugs+pugs_trial_2
+2025-01-29 22:25:43 [INFO] Handler found for prefix: voteview_viewvotes
+2025-01-29 22:25:44 [INFO] Poll owner fetched: util testing
