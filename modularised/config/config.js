@@ -57,7 +57,9 @@ module.exports = {
     // booster
     BoosterRoleId: '1243398569206222892',
     BoostsChannelId: '1306646686650732584',
+    // p.p.p voting channel ids
     pugsChannelId: '1323539892487196724',
     pupsChannelId: '1323539939912192001',
+    pugsTrialChannelId: '1323539892487196724'
 
 };

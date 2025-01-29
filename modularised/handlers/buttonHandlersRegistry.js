@@ -64,7 +64,8 @@ const buttonHandlers = {
     // New VoteView Handlers
     'voteview_prev': voteviewHandler.handlePrevButton,
     'voteview_next': voteviewHandler.handleNextButton,
-    'voteview_viewvotes': voteviewHandler.handleViewVotesButton
+    'voteview_viewvotes': voteviewHandler.handleViewVotesButton,
+    'myvote_viewvotes': pugsVoteHandler.handleMyVoteViewVotes, // only for pugs
 };
 
 module.exports = buttonHandlers;
