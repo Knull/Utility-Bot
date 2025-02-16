@@ -43,10 +43,11 @@ const handleVoteViewCommand = async (interaction) => {
         const hasCommandRole = executorMember.roles.cache.some(role => allowedRoles.includes(role.id));
         if (!hasCommandRole) {
             const embed = new EmbedBuilder()
-                .setDescription('No Permissions!\n> You must have one of the following roles to use this command:')
+                .setTitle('No Permission!')
+                .setDescription('> You must have one of the following roles to use this command:')
                 .addFields({
                     name: 'Roles', 
-                    value: allowedRoles.map(roleId => `<@&${roleId}>`).join('\n')
+                    value: allowedRoles.map(roleId => `- <@&${roleId}>`).join('\n')
                 })
                 .setColor(0xFF0000)
                 .setTimestamp();

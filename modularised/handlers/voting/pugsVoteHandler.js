@@ -45,8 +45,7 @@ const handleVote = async (interaction) => {
                 .setDescription(`Only these members can use this command:\n${allowedRoles
                     .map(roleId => `- <@&${roleId}>`)
                     .join('\n')}`)
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -59,8 +58,8 @@ const handleVote = async (interaction) => {
         if (rows.length > 0) {
             const embed = new EmbedBuilder()
                 .setDescription('A poll is already active for this user.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -115,8 +114,7 @@ const handleVote = async (interaction) => {
             logger.error(`PUGS Channel with ID ${channelId} not found.`);
             const errorEmbed = new EmbedBuilder()
                 .setDescription('PUGS voting channel not found.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
             return interaction.editReply({ embeds: [errorEmbed] });
         }
 
@@ -127,16 +125,14 @@ const handleVote = async (interaction) => {
 
         const successEmbed = new EmbedBuilder()
             .setDescription('Vote created successfully.')
-            .setColor(0xe96d6d)
-            .setTimestamp();
+            .setColor(0xe96d6d);
 
         return interaction.editReply({ embeds: [successEmbed] });
     } catch (error) {
         logger.error('Error handling /pugs vote command:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while creating the vote.')
-            .setColor(0x980e00)
-            .setTimestamp();
+            .setColor(0x980e00);
         return interaction.editReply({ embeds: [embed] });
     }
 };
@@ -157,8 +153,7 @@ const handleVoteButton = async (interaction, voteType) => {
             logger.warn(`Invalid customId: ${customId}`);
             const embed = new EmbedBuilder()
                 .setDescription('Invalid interaction.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
@@ -172,9 +167,8 @@ const handleVoteButton = async (interaction, voteType) => {
         if (type !== 'pugs' && type !== 'pugs_trial') {
             logger.warn(`Ignoring non-pugs type: ${type}`);
             const embed = new EmbedBuilder()
-                .setDescription('This interaction is not valid for PUGS polls.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setDescription('This interaction is not valid for PUGS polls. (make a ticket and report this bug, send an exact screenshot of this.)')
+                .setColor(0x980e00);
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
@@ -183,8 +177,7 @@ const handleVoteButton = async (interaction, voteType) => {
             const embed = new EmbedBuilder()
                 .setTitle('No Permission to Vote!')
                 .setDescription(`Required roles:\n- ${votingAllowedRoles.map(roleId => `<@&${roleId}>`).join('\n- ')}`)
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
@@ -192,8 +185,7 @@ const handleVoteButton = async (interaction, voteType) => {
         if (interaction.user.id === userId) {
             const embed = new EmbedBuilder()
                 .setDescription('You cannot vote on your own poll.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
@@ -205,11 +197,10 @@ const handleVoteButton = async (interaction, voteType) => {
             logger.warn('No active poll found for the user.');
             const embed = new EmbedBuilder()
                 .setDescription('No active poll found for this user.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
-
         const poll = polls[0];
         const roleId = type === 'pugs_trial' ? config.pugsTrialRoleId : config.pugsRoleId;
 
@@ -495,8 +486,8 @@ const handleEndVote = async (interaction) => {
             logger.warn(`Invalid customId format for end_vote: ${customId}`);
             const embed = new EmbedBuilder()
                 .setDescription('Invalid interaction format.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -524,8 +515,8 @@ const handleEndVote = async (interaction) => {
             logger.warn(`Ignoring non-pugs type: ${type}`);
             const embed = new EmbedBuilder()
                 .setDescription('This interaction is not valid for PUGS polls.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -539,8 +530,8 @@ const handleEndVote = async (interaction) => {
             logger.warn(`No active poll found for user_id=${targetUserId} and type=${type}`);
             const embed = new EmbedBuilder()
                 .setDescription('Poll not found or is already inactive.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -551,8 +542,8 @@ const handleEndVote = async (interaction) => {
         if (!allowedRoles.some(rid => interaction.member.roles.cache.has(rid))) {
             const embed = new EmbedBuilder()
                 .setDescription(`Only members with the following roles can end votes:\n${allowedRoles.map(rid => `<@&${rid}>`).join('\n')}`)
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed], ephemeral: true });
         }
 
@@ -564,8 +555,8 @@ const handleEndVote = async (interaction) => {
             logger.error('Error deactivating poll:', error);
             const embed = new EmbedBuilder()
                 .setDescription('An error occurred while ending the vote.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed], ephemeral: true });
         }
 
@@ -602,8 +593,8 @@ const handleEndVote = async (interaction) => {
             logger.error(`PUGS Channel with ID ${channelId} not found.`);
             const embed = new EmbedBuilder()
                 .setDescription('PUGS voting channel not found.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -619,8 +610,8 @@ const handleEndVote = async (interaction) => {
         if (!targetMember) {
             const embed = new EmbedBuilder()
                 .setDescription('Target member not found.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed], ephemeral: true });
         }
 
@@ -630,8 +621,8 @@ const handleEndVote = async (interaction) => {
             logger.error(`Poll with ID ${poll.id} does not have a message_id.`);
             const embed = new EmbedBuilder()
                 .setDescription('Original voting message ID not found in the database.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -646,8 +637,8 @@ const handleEndVote = async (interaction) => {
         if (!originalMessage) {
             const embed = new EmbedBuilder()
                 .setDescription('Original voting message not found in the channel.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -742,8 +733,8 @@ const handleCreate = async (interaction) => {
         if (activePolls.length > 0) {
             const embed = new EmbedBuilder()
                 .setDescription('You already have an active PUGS poll.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -759,8 +750,8 @@ const handleCreate = async (interaction) => {
         if (!memberData) {
             const embed = new EmbedBuilder()
                 .setDescription('Member data not found.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -771,8 +762,8 @@ const handleCreate = async (interaction) => {
         if (isPugs || isPugsTrial || isPremium) {
             const embed = new EmbedBuilder()
                 .setDescription('You cannot create a PUGS poll while holding PUGS, PUGS Trial, or PREMIUM roles.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -828,8 +819,8 @@ const handleCreate = async (interaction) => {
             logger.error(`PUGS Channel with ID ${channelId} not found.`);
             const errorEmbed = new EmbedBuilder()
                 .setDescription('PUGS voting channel not found.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [errorEmbed] });
         }
 
@@ -871,8 +862,8 @@ const handleList = async (interaction) => {
             logger.error(`PUGS Role(s) not found.`);
             const embed = new EmbedBuilder()
                 .setDescription('PUGS or PUGS Trial role not found.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -895,8 +886,8 @@ const handleList = async (interaction) => {
         if (totalPages === 0) {
             const noMembersEmbed = new EmbedBuilder()
                 .setDescription('```ini\nNo members with PUGS or PUGS Trial roles found.\n```')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [noMembersEmbed] });
         }
 
@@ -1121,8 +1112,8 @@ const handleAdd = async (interaction) => {
             logger.error(`PUGs Role with ID ${roleId} not found.`);
             const embed = new EmbedBuilder()
                 .setDescription('PUGs role not found. Please contact an administrator.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -1351,8 +1342,8 @@ const handleAddToPugs = async (interaction) => {
             logger.warn(`Poll not found or is still active for poll_id=${pollId} and type=${type}`);
             const embed = new EmbedBuilder()
                 .setDescription('Poll not found or is still active.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
@@ -1364,8 +1355,8 @@ const handleAddToPugs = async (interaction) => {
         if (!allowedRoles.some(rid => interaction.member.roles.cache.has(rid))) {
             const embed = new EmbedBuilder()
                 .setDescription(`Only members with the following roles can use this button:\n${allowedRoles.map(rid => `<@&${rid}>`).join('\n')}`)
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
@@ -1381,8 +1372,8 @@ const handleAddToPugs = async (interaction) => {
         if (!member) {
             const embed = new EmbedBuilder()
                 .setDescription('Target member not found.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
@@ -1403,8 +1394,8 @@ const handleAddToPugs = async (interaction) => {
             logger.error(`Poll with ID ${poll.id} does not have a message_id.`);
             const embed = new EmbedBuilder()
                 .setDescription('Original voting message ID not found in the database.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
@@ -1414,8 +1405,8 @@ const handleAddToPugs = async (interaction) => {
             logger.error(`PUGS Channel with ID ${channelId} not found.`);
             const embed = new EmbedBuilder()
                 .setDescription('PUGS voting channel not found.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
@@ -1430,8 +1421,8 @@ const handleAddToPugs = async (interaction) => {
         if (!originalMessage) {
             const embed = new EmbedBuilder()
                 .setDescription('Original voting message not found in the channel.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
@@ -1718,8 +1709,8 @@ const handleMyVoteViewVotes = async (interaction) => {
             logger.warn(`Invalid customId for myvote_viewvotes button: ${customId}`);
             const embed = new EmbedBuilder()
                 .setDescription('Invalid view votes interaction.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -1734,8 +1725,8 @@ const handleMyVoteViewVotes = async (interaction) => {
         if (rows.length === 0) {
             const embed = new EmbedBuilder()
                 .setDescription('Poll not found.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -1745,8 +1736,8 @@ const handleMyVoteViewVotes = async (interaction) => {
         if (poll.user_id !== interaction.user.id) {
             const embed = new EmbedBuilder()
                 .setDescription('You do not own this poll.')
-                .setColor(0x980e00)
-                .setTimestamp();
+                .setColor(0x980e00);
+
             return interaction.editReply({ embeds: [embed] });
         }
 

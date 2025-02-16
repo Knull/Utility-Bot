@@ -7,7 +7,7 @@ module.exports = {
     logsChannelId: '1298232017653202984',
     adminRoleId: '1228653981048377373',
     guildId: '1228653980780072981',
-    clientId: '1323540254522740777',
+    clientId: '1298187047189745754',
     pupsManagerRoleId: '1244223177911963648',
     pupsRoleId: '1244223367435915265',
     pugsRoleId: '1228653980977205335',
@@ -16,28 +16,10 @@ module.exports = {
     premiumChannelId: '1323539892487196724',
     pugsTrialRoleId: '1298233148370325514',
     premiumManagerRoleId: '1228653980977205339',
-    token: 'MTMyMzU0MDI1NDUyMjc0MDc3Nw.G-El_U.QGCg20uKo8raJdWk4BWzGhRRVMUFAvt6J9Sk5E',
+    pppOwnerRoleId:'1301515990055780352',
+    token: 'MTI5ODE4NzA0NzE4OTc0NTc1NA.GMvj9M.3qpwa6GCG2spcxrsisl8DhKT8DGDrKVbnwWS9E',
     // New configurations
 
-    // Category IDs for open tickets
-    generalTicketsCategoryId: '1298233635098464327',
-    appealTicketsCategoryId: '1298233726924226560',
-    reportTicketsCategoryId: '1298233797338202183',
-    staffReportTicketsCategoryId: '1298233947792216127',
-    partnershipTicketsCategoryId: '1298234031997190156',
-    storeTicketsCategoryId: '1301876035029041192',
-
-    // Category IDs for archived tickets
-    archivedGeneralTicketsCategoryId: '1305481698808434699',
-    archivedAppealTicketsCategoryId: '1305481698808434699',
-    archivedReportTicketsCategoryId: '1305481698808434699',
-    archivedStaffReportTicketsCategoryId: '1305481698808434699',
-    archivedPartnershipTicketsCategoryId: '1305481698808434699',
-    archivedStoreTicketsCategoryId: '1305481698808434699',
-
-    // Log channel IDs
-    ticketLogsChannelId1: '1323539939912192001', // For General, Appeal, Report tickets
-    ticketLogsChannelId2: '1323539939912192001', // For Staff Report, Partnership tickets
     // staff role ids
     OwnerRoleId: '1228653981115355196',
     HeadDeveloperRoleId: '1228653981086257184',

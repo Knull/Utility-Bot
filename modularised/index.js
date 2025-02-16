@@ -5,7 +5,6 @@ const { Routes } = require('discord-api-types/v10');
 const fs = require('fs');
 const path = require('path');
 const config = require('./config/config');
-const boosterHandler = require('./booster.js');
 const mysql = require('mysql2/promise');
 
 // Initialize MySQL Pool
@@ -97,7 +96,6 @@ for (const file of eventFiles) {
 client.login(config.token);
 
 // Handle Booster Functionality
-// boosterHandler(client);
 
 // Catch uncaught exceptions and unhandled promise rejections
 const ownerId = config.ownerId; // Ensure ownerId is defined in config.js
@@ -120,16 +118,7 @@ async function sendErrorLog(error) {
 process.on("uncaughtException", sendErrorLog);
 process.on("unhandledRejection", sendErrorLog);
 
-// Define Staff Roles (if needed globally)
-const staffRoles = [
-    config.OwnerRoleId,
-    config.HeadDeveloperRoleId,
-    config.ManagerRoleId,
-    config.DeveloperRoleId,
-    config.DesignerRoleId,
-    config.AdminRoleId,
-    config.ModRoleId,
-    config.HelperRoleId,
-];
+
+require('./utilities/booster')(client);
 
 client.pagination = new Collection();

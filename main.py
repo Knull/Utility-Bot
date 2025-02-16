@@ -13,10 +13,10 @@ async def export_chat(token, channel_id, output_file, limit=100, tz_info="UTC", 
 
     @client.event
     async def on_ready():
-        print(f"Logged in as {client.user}")
+        print(f"logged in as {client.user}")
         channel = client.get_channel(channel_id)
         if channel is None:
-            print("Invalid channel ID")
+            print("channel id is invalid")
             await client.close()
             return
 
@@ -27,20 +27,19 @@ async def export_chat(token, channel_id, output_file, limit=100, tz_info="UTC", 
                 tz_info=tz_info,
                 military_time=military_time,
                 bot=client,
-                fancy_times=True  # Use friendly timestamps like "Today", "Yesterday"
+                fancy_times=True  
             )
 
             if transcript is None:
-                print("No transcript generated")
+                print("no transcript generated")
             else:
-                # Ensure the directory exists
                 os.makedirs(os.path.dirname(output_file), exist_ok=True)
                 with open(output_file, "w", encoding="utf-8") as f:
                     f.write(transcript)
                 print(f"Transcript saved to {os.path.abspath(output_file)}")
 
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"an error occurred: {e}")
 
         finally:
             await client.close()
@@ -54,7 +53,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output_file", required=True, help="Output file path")
     parser.add_argument("-l", "--limit", type=int, default=100, help="Message limit")
     parser.add_argument("--tz_info", type=str, default="UTC", help="Timezone info")
-    parser.add_argument("--military_time", action="store_true", help="Use 24-hour time format")
+    parser.add_argument("--military_time", action="store_true", help="24 hr format")
 
     args = parser.parse_args()
 

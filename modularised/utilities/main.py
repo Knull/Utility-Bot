@@ -13,10 +13,10 @@ async def export_chat(token, channel_id, output_file, limit=100, tz_info="UTC", 
 
     @client.event
     async def on_ready():
-        print(f"Logged in as {client.user}")
+        print(f"logged in as {client.user}")
         channel = client.get_channel(channel_id)
         if channel is None:
-            print("Invalid channel ID")
+            print("channel ID is invalid")
             await client.close()
             return
 
@@ -27,13 +27,12 @@ async def export_chat(token, channel_id, output_file, limit=100, tz_info="UTC", 
                 tz_info=tz_info,
                 military_time=military_time,
                 bot=client,
-                fancy_times=True  # Use friendly timestamps like "Today", "Yesterday"
+                fancy_times=True  
             )
 
             if transcript is None:
                 print("No transcript generated")
             else:
-                # Ensure the directory exists
                 os.makedirs(os.path.dirname(output_file), exist_ok=True)
                 with open(output_file, "w", encoding="utf-8") as f:
                     f.write(transcript)
@@ -48,13 +47,13 @@ async def export_chat(token, channel_id, output_file, limit=100, tz_info="UTC", 
     await client.start(token)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Export Discord chat logs")
-    parser.add_argument("-t", "--token", required=True, help="Discord bot token")
-    parser.add_argument("-c", "--channel_id", type=int, required=True, help="Discord channel ID")
-    parser.add_argument("-o", "--output_file", required=True, help="Output file path")
-    parser.add_argument("-l", "--limit", type=int, default=100, help="Message limit")
-    parser.add_argument("--tz_info", type=str, default="UTC", help="Timezone info")
-    parser.add_argument("--military_time", action="store_true", help="Use 24-hour time format")
+    parser = argparse.ArgumentParser(description="export chat logs")
+    parser.add_argument("-t", "--token", required=True, help="bot token")
+    parser.add_argument("-c", "--channel_id", type=int, required=True, help="channel ID")
+    parser.add_argument("-o", "--output_file", required=True, help="path of the final output")
+    parser.add_argument("-l", "--limit", type=int, default=100, help="message limit") #should be capped at 1k
+    parser.add_argument("--tz_info", type=str, default="UTC", help="timezone(gmt)")
+    parser.add_argument("--military_time", action="store_true", help="24 hr format")
 
     args = parser.parse_args()
 
