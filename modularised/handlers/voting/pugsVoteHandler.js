@@ -1,4 +1,3 @@
-// handlers/voting/pugsVoteHandler.js
 const { 
     EmbedBuilder, 
     ButtonBuilder, 
@@ -28,6 +27,23 @@ const votingAllowedRoles = [
 ];
 
 /**
+ * Helper function to get the embed color based on the poll type.
+ * If type is 'pugs_trial', it returns the color of the trial role; otherwise the pugs role color.
+ * Defaults to 'pugs' if no type is provided.
+ * @param {CommandInteraction|ButtonInteraction} interaction 
+ * @param {string} type - 'pugs' or 'pugs_trial'
+ */
+function getEmbedColor(interaction, type = 'pugs') {
+    if (type === 'pugs_trial') {
+        const trialRole = interaction.guild.roles.cache.get(config.pugsTrialRoleId);
+        return trialRole?.color || 0xe96d6d;
+    } else {
+        const pugsRole = interaction.guild.roles.cache.get(config.pugsRoleId);
+        return pugsRole?.color || 0xe96d6d;
+    }
+}
+
+/**
  * Handle the `/pugs vote` command
  * @param {CommandInteraction} interaction 
  */
@@ -46,8 +62,7 @@ const handleVote = async (interaction) => {
                 .setDescription(`Only these members can use this command:\n${allowedRoles
                     .map(roleId => `- <@&${roleId}>`)
                     .join('\n')}`)
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction));
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -59,8 +74,7 @@ const handleVote = async (interaction) => {
         if (rows.length > 0) {
             const embed = new EmbedBuilder()
                 .setDescription('A poll is already active for this user.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type));
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -75,10 +89,6 @@ const handleVote = async (interaction) => {
         // Determine the role ID based on type
         const roleId = type === 'pugs_trial' ? config.pugsTrialRoleId : config.pugsRoleId;
 
-        // Fetch the role to get its color
-        const role = interaction.guild.roles.cache.get(roleId);
-        const embedColor = role ? role.color : '#e96d6d'; // Default color if role not found
-
         const embed = new EmbedBuilder()
             .setAuthor({ name: `${user.username} | PUGS Vote`, iconURL: user.displayAvatarURL() })
             .setDescription(`> A vote has been created for <@${user.id}> to join <@&${roleId}>.`)
@@ -87,10 +97,10 @@ const handleVote = async (interaction) => {
                 { name: 'Downvotes 👎', value: '```0```', inline: true }
             )
             .setFooter({ text: `Created by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
-            .setColor(embedColor)
+            .setColor(getEmbedColor(interaction, type))
             .setTimestamp();
 
-            const buttons = new ActionRowBuilder()
+        const buttons = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId(`upvote_${type}_${user.id}`)
@@ -115,7 +125,7 @@ const handleVote = async (interaction) => {
             logger.error(`PUGS Channel with ID ${channelId} not found.`);
             const errorEmbed = new EmbedBuilder()
                 .setDescription('PUGS voting channel not found.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction, type));
             return interaction.editReply({ embeds: [errorEmbed] });
         }
 
@@ -126,14 +136,16 @@ const handleVote = async (interaction) => {
 
         const successEmbed = new EmbedBuilder()
             .setDescription('Vote created successfully.')
-            .setColor(0xe96d6d);
+            .setColor(getEmbedColor(interaction, type))
+            .setTimestamp();
 
         return interaction.editReply({ embeds: [successEmbed] });
     } catch (error) {
         logger.error('Error handling /pugs vote command:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while creating the vote.')
-            .setColor(0x980e00);
+            .setColor(getEmbedColor(interaction))
+            .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
 };
@@ -154,7 +166,8 @@ const handleVoteButton = async (interaction, voteType) => {
             logger.warn(`Invalid customId: ${customId}`);
             const embed = new EmbedBuilder()
                 .setDescription('Invalid interaction.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
@@ -162,35 +175,25 @@ const handleVoteButton = async (interaction, voteType) => {
         const userId = parts[parts.length - 1]; // Last part is User ID
         const type = parts.slice(1, parts.length - 1).join('_'); // Join the middle parts for type
 
-        // Log the parsed components for debugging
         logger.debug(`Parsed customId - Action: ${action}, Type: ${type}, User ID: ${userId}`);
 
         if (type !== 'pugs' && type !== 'pugs_trial') {
             logger.warn(`Ignoring non-pugs type: ${type}`);
             const embed = new EmbedBuilder()
                 .setDescription('This interaction is not valid for PUGS polls. (make a ticket and report this bug, send an exact screenshot of this.)')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
-        // Check if the user has one of the votingAllowedRoles
-        if (!votingAllowedRoles.some(roleId => interaction.member.roles.cache.has(roleId))) {
-            const embed = new EmbedBuilder()
-                .setTitle('No Permission to Vote!')
-                .setDescription(`Required roles:\n- ${votingAllowedRoles.map(roleId => `<@&${roleId}>`).join('\n- ')}`)
-                .setColor(0x980e00);
-            return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-        }
-
-        // Prevent self-voting
         if (interaction.user.id === userId) {
             const embed = new EmbedBuilder()
                 .setDescription('You cannot vote on your own poll.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
-        // Fetch active poll
         const sqlFetchPoll = 'SELECT * FROM polls WHERE user_id = ? AND type = ? AND active = 1';
         logger.debug(`Executing SQL Query: ${sqlFetchPoll} with parameters: [${userId}, ${type}]`);
         const [polls] = await pool.execute(sqlFetchPoll, [userId, type]);
@@ -198,14 +201,13 @@ const handleVoteButton = async (interaction, voteType) => {
             logger.warn('No active poll found for the user.');
             const embed = new EmbedBuilder()
                 .setDescription('No active poll found for this user.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
         const poll = polls[0];
         const roleId = type === 'pugs_trial' ? config.pugsTrialRoleId : config.pugsRoleId;
 
-        // Check if the user has already voted
         const sqlCheckVote = 'SELECT * FROM votes WHERE user_id = ? AND poll_id = ?';
         logger.debug(`Executing SQL Query: ${sqlCheckVote} with parameters: [${interaction.user.id}, ${poll.id}]`);
         const [existingVote] = await pool.execute(sqlCheckVote, [interaction.user.id, poll.id]);
@@ -215,13 +217,11 @@ const handleVoteButton = async (interaction, voteType) => {
             if (previousVote === voteType) {
                 const embed = new EmbedBuilder()
                     .setDescription(`You have already ${voteType}d this poll.`)
-                    .setColor(0x980e00)
+                    .setColor(getEmbedColor(interaction, type))
                     .setTimestamp();
                 return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
             } else {
-                // User is changing their vote
                 try {
-                    // Begin transaction
                     const connection = await pool.getConnection();
                     try {
                         await connection.beginTransaction();
@@ -253,25 +253,22 @@ const handleVoteButton = async (interaction, voteType) => {
                         connection.release();
                     }
 
-                    // Fetch updated poll
                     const sqlFetchUpdatedPoll = 'SELECT * FROM polls WHERE id = ?';
                     logger.debug(`Executing SQL Query: ${sqlFetchUpdatedPoll} with parameters: [${poll.id}]`);
                     const [updatedPolls] = await pool.execute(sqlFetchUpdatedPoll, [poll.id]);
                     const updatedPoll = updatedPolls[0];
 
-                    // Update the embed in the voting channel
                     const channelId = type === 'pugs_trial' ? config.pugsTrialChannelId : config.pugsChannelId;
                     const channel = interaction.guild.channels.cache.get(channelId);
                     if (!channel) {
                         logger.error(`PUGS Channel with ID ${channelId} not found.`);
                         const errorEmbed = new EmbedBuilder()
                             .setDescription('PUGS voting channel not found.')
-                            .setColor(0x980e00)
+                            .setColor(getEmbedColor(interaction, type))
                             .setTimestamp();
                         return interaction.editReply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
                     }
 
-                    // Fetch the original message to update
                     let targetMember;
                     try {
                         targetMember = await interaction.guild.members.fetch(userId);
@@ -283,7 +280,7 @@ const handleVoteButton = async (interaction, voteType) => {
                     if (!targetMember) {
                         const embed = new EmbedBuilder()
                             .setDescription('Target member not found.')
-                            .setColor(0x980e00)
+                            .setColor(getEmbedColor(interaction, type))
                             .setTimestamp();
                         return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                     }
@@ -299,7 +296,7 @@ const handleVoteButton = async (interaction, voteType) => {
                         logger.error('Original voting message not found.');
                         const embed = new EmbedBuilder()
                             .setDescription('Original voting message not found.')
-                            .setColor(0x980e00)
+                            .setColor(getEmbedColor(interaction, type))
                             .setTimestamp();
                         return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                     }
@@ -316,7 +313,7 @@ const handleVoteButton = async (interaction, voteType) => {
 
                     const replyEmbed = new EmbedBuilder()
                         .setDescription(`You have cast a **${voteType}**.`)
-                        .setColor(0xe96d6d)
+                        .setColor(getEmbedColor(interaction, type))
                         .setTimestamp();
 
                     return interaction.editReply({ embeds: [replyEmbed], flags: MessageFlags.Ephemeral });
@@ -324,15 +321,13 @@ const handleVoteButton = async (interaction, voteType) => {
                     logger.error('Error changing vote:', error);
                     const embed = new EmbedBuilder()
                         .setDescription('An error occurred while changing your vote.')
-                        .setColor(0x980e00)
+                        .setColor(getEmbedColor(interaction, type))
                         .setTimestamp();
                     return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                 }
             }
         } else {
-            // User has not voted yet, proceed to cast the vote
             try {
-                // Begin transaction
                 const connection = await pool.getConnection();
                 try {
                     await connection.beginTransaction();
@@ -364,25 +359,22 @@ const handleVoteButton = async (interaction, voteType) => {
                     connection.release();
                 }
 
-                // Fetch updated poll
                 const sqlFetchUpdatedPoll = 'SELECT * FROM polls WHERE id = ?';
                 logger.debug(`Executing SQL Query: ${sqlFetchUpdatedPoll} with parameters: [${poll.id}]`);
                 const [updatedPolls] = await pool.execute(sqlFetchUpdatedPoll, [poll.id]);
                 const updatedPoll = updatedPolls[0];
 
-                // Update the embed in the voting channel
                 const channelId = type === 'pugs_trial' ? config.pugsTrialChannelId : config.pugsChannelId;
                 const channel = interaction.guild.channels.cache.get(channelId);
                 if (!channel) {
                     logger.error(`PUGS Channel with ID ${channelId} not found.`);
                     const errorEmbed = new EmbedBuilder()
                         .setDescription('PUGS voting channel not found.')
-                        .setColor(0x980e00)
+                        .setColor(getEmbedColor(interaction, type))
                         .setTimestamp();
                     return interaction.editReply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
                 }
 
-                // Fetch the original message to update
                 let targetMember;
                 try {
                     targetMember = await interaction.guild.members.fetch(userId);
@@ -394,7 +386,7 @@ const handleVoteButton = async (interaction, voteType) => {
                 if (!targetMember) {
                     const embed = new EmbedBuilder()
                         .setDescription('Target member not found.')
-                        .setColor(0x980e00)
+                        .setColor(getEmbedColor(interaction, type))
                         .setTimestamp();
                     return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                 }
@@ -410,7 +402,7 @@ const handleVoteButton = async (interaction, voteType) => {
                     logger.error('Original voting message not found.');
                     const embed = new EmbedBuilder()
                         .setDescription('Original voting message not found.')
-                        .setColor(0x980e00)
+                        .setColor(getEmbedColor(interaction, type))
                         .setTimestamp();
                     return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                 }
@@ -427,7 +419,7 @@ const handleVoteButton = async (interaction, voteType) => {
 
                 const replyEmbed = new EmbedBuilder()
                     .setDescription(`You have cast a **${voteType}**.`)
-                    .setColor(0xe96d6d)
+                    .setColor(getEmbedColor(interaction, type))
                     .setTimestamp();
 
                 return interaction.editReply({ embeds: [replyEmbed], flags: MessageFlags.Ephemeral });
@@ -435,7 +427,7 @@ const handleVoteButton = async (interaction, voteType) => {
                 logger.error('Error casting vote:', error);
                 const embed = new EmbedBuilder()
                     .setDescription('An error occurred while casting your vote.')
-                    .setColor(0x980e00)
+                    .setColor(getEmbedColor(interaction, type))
                     .setTimestamp();
                 return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
             }
@@ -444,13 +436,11 @@ const handleVoteButton = async (interaction, voteType) => {
         logger.error('Error handling vote button:', error);
         const embed = new EmbedBuilder()
             .setDescription('An unexpected error occurred while processing your vote.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 };
-
-
 
 /**
  * Handle the Upvote button
@@ -479,16 +469,12 @@ const handleEndVote = async (interaction) => {
         const customId = interaction.customId; // e.g., 'end_vote_pugs_trial_536991182035746816'
         const parts = customId.split('_');
 
-        // Expected formats:
-        // 'end_vote_pugs_<userId>' => 4 parts
-        // 'end_vote_pugs_trial_<userId>' => 5 parts
-
         if (parts.length < 4) {
             logger.warn(`Invalid customId format for end_vote: ${customId}`);
             const embed = new EmbedBuilder()
                 .setDescription('Invalid interaction format.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -496,32 +482,27 @@ const handleEndVote = async (interaction) => {
         let type, targetUserId;
 
         if (parts.length === 4) {
-            // Format: 'end_vote_pugs_<userId>'
             type = parts[2]; // 'pugs'
-            targetUserId = parts[3]; // '536991182035746816'
+            targetUserId = parts[3];
         } else if (parts.length === 5) {
-            // Format: 'end_vote_pugs_trial_<userId>'
             type = `${parts[2]}_${parts[3]}`; // 'pugs_trial'
-            targetUserId = parts[4]; // '536991182035746816'
+            targetUserId = parts[4];
         } else {
-            // Handle unexpected formats with more than 5 parts
-            type = parts.slice(2, -1).join('_'); // Combine all parts except action and pollId
-            targetUserId = parts[parts.length - 1]; // Last part is pollId
+            type = parts.slice(2, -1).join('_');
+            targetUserId = parts[parts.length - 1];
         }
 
-        // Log the parsed components for debugging
         logger.debug(`Parsed customId - Action: ${action}, Type: ${type}, User ID: ${targetUserId}`);
 
         if (type !== 'pugs' && type !== 'pugs_trial') {
             logger.warn(`Ignoring non-pugs type: ${type}`);
             const embed = new EmbedBuilder()
                 .setDescription('This interaction is not valid for PUGS polls.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
         }
 
-        // Fetch active poll
         const [polls] = await pool.execute(
             'SELECT * FROM polls WHERE user_id = ? AND type = ? AND active = 1',
             [targetUserId, type]
@@ -531,24 +512,22 @@ const handleEndVote = async (interaction) => {
             logger.warn(`No active poll found for user_id=${targetUserId} and type=${type}`);
             const embed = new EmbedBuilder()
                 .setDescription('Poll not found or is already inactive.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
         }
 
         const poll = polls[0];
         const roleId = type === 'pugs_trial' ? config.pugsTrialRoleId : config.pugsRoleId;
 
-        // Permission check using the allowedRoles list
         if (!allowedRoles.some(rid => interaction.member.roles.cache.has(rid))) {
             const embed = new EmbedBuilder()
                 .setDescription(`Only members with the following roles can end votes:\n${allowedRoles.map(rid => `<@&${rid}>`).join('\n')}`)
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed], ephemeral: true });
         }
 
-        // Deactivate the poll
         try {
             await pool.execute('UPDATE polls SET active = 0 WHERE id = ?', [poll.id]);
             logger.info(`Poll ID ${poll.id} for user ID ${targetUserId} has been deactivated.`);
@@ -556,8 +535,8 @@ const handleEndVote = async (interaction) => {
             logger.error('Error deactivating poll:', error);
             const embed = new EmbedBuilder()
                 .setDescription('An error occurred while ending the vote.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed], ephemeral: true });
         }
 
@@ -566,7 +545,6 @@ const handleEndVote = async (interaction) => {
         const voteWon = upvotes > downvotes;
         const resultColor = voteWon ? '#00FF00' : '#FF0000';
 
-        // Disable all buttons in the original message
         const disabledButtons = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId(`upvote_${type}_${targetUserId}`)
@@ -587,19 +565,17 @@ const handleEndVote = async (interaction) => {
                 .setDisabled(true)
         );
 
-        // Determine the channel ID based on type
         const channelId = type === 'pugs_trial' ? config.pugsTrialChannelId : config.pugsChannelId;
         const channel = interaction.guild.channels.cache.get(channelId);
         if (!channel) {
             logger.error(`PUGS Channel with ID ${channelId} not found.`);
             const embed = new EmbedBuilder()
                 .setDescription('PUGS voting channel not found.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
         }
 
-        // Fetch the target member
         let targetMember;
         try {
             targetMember = await interaction.guild.members.fetch(targetUserId);
@@ -611,19 +587,18 @@ const handleEndVote = async (interaction) => {
         if (!targetMember) {
             const embed = new EmbedBuilder()
                 .setDescription('Target member not found.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed], ephemeral: true });
         }
 
-        // Fetch the original voting message using message_id
         const messageId = poll.message_id;
         if (!messageId) {
             logger.error(`Poll with ID ${poll.id} does not have a message_id.`);
             const embed = new EmbedBuilder()
                 .setDescription('Original voting message ID not found in the database.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -638,12 +613,11 @@ const handleEndVote = async (interaction) => {
         if (!originalMessage) {
             const embed = new EmbedBuilder()
                 .setDescription('Original voting message not found in the channel.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
         }
 
-        // Update the embed with the final vote counts
         const updatedEmbed = EmbedBuilder.from(originalMessage.embeds[0])
             .setDescription(`A vote has been created for <@${targetUserId}> to join <@&${roleId}>.`)
             .setFields( 
@@ -655,7 +629,6 @@ const handleEndVote = async (interaction) => {
         await originalMessage.edit({ embeds: [updatedEmbed], components: [disabledButtons] });
         logger.info(`Updated voting message for poll ID ${poll.id}. Buttons disabled.`);
 
-        // Create a result embed
         const resultEmbed = new EmbedBuilder()
             .setAuthor({ name: `${targetMember.user.username} | PUGS Vote Results`, iconURL: targetMember.user.displayAvatarURL() })
             .setDescription(`**Upvotes 👍:** \`\`\`${upvotes}\`\`\`\n**Downvotes 💔:** \`\`\`${downvotes}\`\`\`\n<@${targetUserId}> has **${voteWon ? 'won' : 'lost'}** the vote!`)
@@ -666,7 +639,6 @@ const handleEndVote = async (interaction) => {
             })
             .setTimestamp();
 
-        // Add the "Add to Pugs/Pugs Trial" button if the vote was won
         let actionButtons;
         if (voteWon) {
             actionButtons = new ActionRowBuilder().addComponents(
@@ -674,16 +646,15 @@ const handleEndVote = async (interaction) => {
                     .setCustomId(`add_to_pugs_${type}_${poll.id}`)
                     .setLabel('Add to Pugs')
                     .setStyle(ButtonStyle.Primary)
-                    .setEmoji('✅') // Checkmark emoji
+                    .setEmoji('✅')
             );
         } else {
-            // Add a disabled "Add to Pugs" button
             actionButtons = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId(`add_to_pugs_${type}_${poll.id}`)
                     .setLabel('Add to Pugs')
                     .setStyle(ButtonStyle.Primary)
-                    .setEmoji('✅') // Checkmark emoji
+                    .setEmoji('✅')
                     .setDisabled(true)
             );
         }
@@ -694,12 +665,11 @@ const handleEndVote = async (interaction) => {
         logger.error('Error handling end_vote interaction:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while ending the vote.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
 };
-
 
 /**
  * Handle the `/pugs create` command for managers to create their own PUGS votes
@@ -712,21 +682,18 @@ const handleCreate = async (interaction) => {
     const member = interaction.member;
     const type = interaction.options.getString('type'); // 'pugs' or 'pugs_trial'
 
-    // Permission check using the allowedRoles list
     if (!allowedRoles.some(roleId => member.roles.cache.has(roleId))) {
         const embed = new EmbedBuilder()
             .setTitle('Missing Role!')
             .setDescription(`Only these members can use this command:\n${allowedRoles
                 .map(roleId => `- <@&${roleId}>`)
                 .join('\n')}`)
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction, type))
             .setTimestamp();
-
         return interaction.editReply({ embeds: [embed] });
     }
 
     try {
-        // Check if the user already has an active poll
         const [activePolls] = await pool.execute(
             'SELECT * FROM polls WHERE user_id = ? AND type = ? AND active = 1',
             [user.id, type]
@@ -734,12 +701,11 @@ const handleCreate = async (interaction) => {
         if (activePolls.length > 0) {
             const embed = new EmbedBuilder()
                 .setDescription('You already have an active PUGS poll.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
         }
 
-        // Check if the user is already PUGS or PREMIUM
         let memberData;
         try {
             memberData = await interaction.guild.members.fetch(user.id);
@@ -751,8 +717,8 @@ const handleCreate = async (interaction) => {
         if (!memberData) {
             const embed = new EmbedBuilder()
                 .setDescription('Member data not found.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -763,25 +729,18 @@ const handleCreate = async (interaction) => {
         if (isPugs || isPugsTrial || isPremium) {
             const embed = new EmbedBuilder()
                 .setDescription('You cannot create a PUGS poll while holding PUGS, PUGS Trial, or PREMIUM roles.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
         }
 
-        // Create new poll
         const [result] = await pool.execute(
             'INSERT INTO polls (user_id, type, upvotes, downvotes, active, created_at) VALUES (?, ?, 0, 0, 1, NOW())',
             [user.id, type]
         );
 
         const pollId = result.insertId;
-
-        // Determine the role ID based on type
         const roleId = type === 'pugs_trial' ? config.pugsTrialRoleId : config.pugsRoleId;
-
-        // Fetch the role to get its color
-        const role = interaction.guild.roles.cache.get(roleId);
-        const embedColor = role ? role.color : '#e96d6d'; // Default color if role not found
 
         const embed = new EmbedBuilder()
             .setAuthor({ name: `${user.username} | PUGS Vote`, iconURL: user.displayAvatarURL() })
@@ -791,10 +750,10 @@ const handleCreate = async (interaction) => {
                 { name: 'Downvotes 👎', value: '```0```', inline: true }
             )
             .setFooter({ text: `Created by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
-            .setColor(embedColor)
+            .setColor(getEmbedColor(interaction, type))
             .setTimestamp();
 
-            const buttons = new ActionRowBuilder()
+        const buttons = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId(`upvote_${type}_${user.id}`)
@@ -812,35 +771,30 @@ const handleCreate = async (interaction) => {
                     .setStyle(ButtonStyle.Secondary)
             );
         
-
-        // Determine the channel ID based on type
         const channelId = type === 'pugs_trial' ? config.pugsTrialChannelId : config.pugsChannelId;
         const channel = interaction.guild.channels.cache.get(channelId);
         if (!channel) {
             logger.error(`PUGS Channel with ID ${channelId} not found.`);
             const errorEmbed = new EmbedBuilder()
                 .setDescription('PUGS voting channel not found.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [errorEmbed] });
         }
 
         const sentMessage = await channel.send({ content: `<@&${roleId}>`, embeds: [embed], components: [buttons] });
-
-        // Update the poll record with the message_id
         await pool.execute('UPDATE polls SET message_id = ? WHERE id = ?', [sentMessage.id, pollId]);
 
         const successEmbed = new EmbedBuilder()
             .setDescription('Your PUGS vote has been created successfully.')
-            .setColor(0xe96d6d)
+            .setColor(getEmbedColor(interaction, type))
             .setTimestamp();
-
         return interaction.editReply({ embeds: [successEmbed] });
     } catch (error) {
         logger.error('Error creating PUGS poll:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while creating your PUGS poll.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction, type))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
@@ -852,10 +806,8 @@ const handleCreate = async (interaction) => {
  */
 const handleList = async (interaction) => {
     try {
-        // Defer the reply to give the bot more time to process
         await interaction.deferReply({ ephemeral: false });
 
-        // Fetch the PUGS and PUGS Trial roles from the guild
         const pugsRole = interaction.guild.roles.cache.get(config.pugsRoleId);
         const pugsTrialRole = interaction.guild.roles.cache.get(config.pugsTrialRoleId);
 
@@ -863,57 +815,42 @@ const handleList = async (interaction) => {
             logger.error(`PUGS Role(s) not found.`);
             const embed = new EmbedBuilder()
                 .setDescription('PUGS or PUGS Trial role not found.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
         }
 
-        // Fetch all guild members (requires GUILD_MEMBERS intent)
         await interaction.guild.members.fetch();
 
-        // Access the members with the PUGS and PUGS Trial roles from the cache
         const membersWithPugs = pugsRole.members;
         const membersWithPugsTrial = pugsTrialRole.members;
-
         const combinedMembers = new Set([...membersWithPugs.values(), ...membersWithPugsTrial.values()]);
 
         const membersArray = Array.from(combinedMembers);
         const pageSize = 10;
         const totalPages = Math.ceil(membersArray.length / pageSize);
 
-        // Debugging Log
         logger.info(`Total members with PUGS or PUGS Trial roles: ${membersArray.length}`);
 
         if (totalPages === 0) {
             const noMembersEmbed = new EmbedBuilder()
                 .setDescription('```ini\nNo members with PUGS or PUGS Trial roles found.\n```')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction))
+                .setTimestamp();
             return interaction.editReply({ embeds: [noMembersEmbed] });
         }
 
-        const currentPage = 0; // Start with the first page
+        const currentPage = 0;
         const paginatedMembers = membersArray.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
 
         const memberList = paginatedMembers.map((member, index) => `\`\`${index + 1 + currentPage * pageSize}.\`\` <@${member.id}>`).join('\n');
         const userPosition = membersArray.findIndex(member => member.id === interaction.user.id) + 1;
 
-        // Determine the color based on the roles the member has
-        let embedColor = 0xe96d6d; // Default color
-        if (membersArray.length > 0) {
-            const firstMember = membersArray[0];
-            if (firstMember.roles.cache.has(pugsRole.id)) {
-                embedColor = pugsRole.color || 0xe96d6d;
-            } else if (firstMember.roles.cache.has(pugsTrialRole.id)) {
-                embedColor = pugsTrialRole.color || 0xe96d6d;
-            }
-        }
-
         const listEmbed = new EmbedBuilder()
             .setAuthor({ name: 'PUGS List', iconURL: interaction.guild.iconURL() })
             .setDescription(`Mode: **PUGS** [${currentPage + 1}/${totalPages}]\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n${memberList}\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬`)
             .setFooter({ text: `${userPosition}. ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
-            .setColor(embedColor)
+            .setColor(getEmbedColor(interaction, 'pugs'))
             .setTimestamp();
 
         const buttons = new ActionRowBuilder()
@@ -935,7 +872,7 @@ const handleList = async (interaction) => {
         logger.error('Error handling /pugs list command:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while fetching the PUGS list.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
@@ -946,53 +883,46 @@ const handleList = async (interaction) => {
  * @param {ButtonInteraction} interaction 
  */
 const handlePagination = async (interaction) => {
-    const customId = interaction.customId; // e.g., 'next_list_pugs_<userId>_<currentPage>'
+    const customId = interaction.customId; 
     const parts = customId.split('_');
 
     if (parts.length < 5) {
         logger.warn(`Invalid customId format for pagination: ${customId}`);
         const embed = new EmbedBuilder()
             .setDescription('Invalid pagination interaction.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    const action = parts[0]; // 'next' or 'prev'
-    const type = parts[1]; // 'list'
-    const roleType = parts[2]; // 'pugs'
-    const userId = parts[3]; // User ID
-    let currentPage = parseInt(parts[4], 10); // Current page index
+    const action = parts[0]; 
+    const userId = parts[3];
+    let currentPage = parseInt(parts[4], 10);
 
-    // Verify that the user interacting is the initiator
     if (interaction.user.id !== userId) {
         const embed = new EmbedBuilder()
             .setDescription(`> Only <@${userId}> can interact with these buttons.`)
-            .setColor('#D72F2F')
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    // Fetch the PUGS and PUGS Trial roles
     const pugsRole = interaction.guild.roles.cache.get(config.pugsRoleId);
     const pugsTrialRole = interaction.guild.roles.cache.get(config.pugsTrialRoleId);
     if (!pugsRole || !pugsTrialRole) {
         logger.error(`PUGS Role(s) not found.`);
         const embed = new EmbedBuilder()
             .setDescription('PUGS or PUGS Trial role not found.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     try {
-        // Fetch all guild members (requires GUILD_MEMBERS intent)
         await interaction.guild.members.fetch();
 
-        // Access the members with the PUGS and PUGS Trial roles from the cache
         const membersWithPugs = pugsRole.members;
         const membersWithPugsTrial = pugsTrialRole.members;
-
         const combinedMembers = new Set([...membersWithPugs.values(), ...membersWithPugsTrial.values()]);
         const membersArray = Array.from(combinedMembers);
         const pageSize = 10;
@@ -1001,12 +931,11 @@ const handlePagination = async (interaction) => {
         if (membersArray.length === 0) {
             const embed = new EmbedBuilder()
                 .setDescription('No members have the PUGS or PUGS Trial roles.')
-                .setColor(0xFFD700)
+                .setColor(getEmbedColor(interaction))
                 .setTimestamp();
             return interaction.update({ embeds: [embed], components: [] });
         }
 
-        // Adjust currentPage based on action
         if (action === 'next') {
             currentPage += 1;
         } else if (action === 'prev') {
@@ -1015,65 +944,51 @@ const handlePagination = async (interaction) => {
             logger.warn(`Unknown pagination action: ${action}`);
             const embed = new EmbedBuilder()
                 .setDescription('Unknown pagination action.')
-                .setColor(0xFFD700)
+                .setColor(getEmbedColor(interaction))
                 .setTimestamp();
             return interaction.reply({ embeds: [embed], ephemeral: true });
         }
 
-        // Ensure currentPage is within bounds after increment/decrement
         if (currentPage < 0) currentPage = 0;
         if (currentPage >= totalPages) currentPage = totalPages - 1;
 
         const paginatedMembers = membersArray.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
         const memberList = paginatedMembers.map((member, index) => `\`\`${index + 1 + currentPage * pageSize}.\`\` <@${member.id}>`).join('\n');
-
         const userPosition = membersArray.findIndex(member => member.id === interaction.user.id) + 1;
-
-        // Determine the color based on the roles the member has
-        let embedColor = 0xe96d6d; // Default color
-        if (paginatedMembers.length > 0) {
-            const firstMember = paginatedMembers[0];
-            if (firstMember.roles.cache.has(pugsRole.id)) {
-                embedColor = pugsRole.color || 0xe96d6d;
-            } else if (firstMember.roles.cache.has(pugsTrialRole.id)) {
-                embedColor = pugsTrialRole.color || 0xe96d6d;
-            }
-        }
 
         const embed = new EmbedBuilder()
             .setAuthor({ name: 'PUGS List', iconURL: interaction.guild.iconURL() })
             .setDescription(`Mode: **PUGS** [${currentPage + 1}/${totalPages}]\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n${memberList}\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬`)
             .setFooter({ text: `${userPosition}. ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
-            .setColor(embedColor)
+            .setColor(getEmbedColor(interaction, 'pugs'))
             .setTimestamp();
 
         const buttons = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId(`prev_list_pugs_${userId}_${currentPage}`)
+                    .setCustomId(`prev_list_pugs_${interaction.user.id}_${currentPage}`)
                     .setEmoji('⬅️')
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(currentPage === 0),
                 new ButtonBuilder()
-                    .setCustomId(`next_list_pugs_${userId}_${currentPage}`)
+                    .setCustomId(`next_list_pugs_${interaction.user.id}_${currentPage}`)
                     .setEmoji('➡️')
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(currentPage === totalPages - 1)
             );
 
-        // Update the original message with the new embed and updated buttons
         await interaction.update({ embeds: [embed], components: [buttons] });
-
-        logger.info(`PUGS list pagination: user ${userId} navigated to page ${currentPage + 1}/${totalPages}`);
+        logger.info(`PUGS list pagination: user ${interaction.user.id} navigated to page ${currentPage + 1}/${totalPages}`);
     } catch (error) {
         logger.error('Error handling pagination:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while handling pagination.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 };
+
 /**
  * Handle the `/pugs add` command
  * @param {CommandInteraction} interaction 
@@ -1085,21 +1000,11 @@ const handleAdd = async (interaction) => {
     const type = interaction.options.getString('type'); // 'pugs' or 'pugs_trial'
     const executor = interaction.member;
 
-    // Permission check using the allowedRoles list
     if (!allowedRoles.some(roleId => executor.roles.cache.has(roleId))) {
         const embed = new EmbedBuilder()
             .setTitle('No Permission!')
             .setDescription(`You need one of the following roles to use this command:\n- ${allowedRoles.map(roleId => `<@&${roleId}>`).join('\n- ')}`)
-            .setColor(0x980e00);
-
-        return interaction.editReply({ embeds: [embed] });
-    }
-
-    // Validate the type
-    if (type !== 'pugs' && type !== 'pugs_trial') {
-        const embed = new EmbedBuilder()
-            .setDescription('Invalid type specified. Please choose either `pugs` or `pugs_trial`.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction, type))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
@@ -1113,47 +1018,44 @@ const handleAdd = async (interaction) => {
             logger.error(`PUGs Role with ID ${roleId} not found.`);
             const embed = new EmbedBuilder()
                 .setDescription('PUGs role not found. Please contact an administrator.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
         }
 
         if (member.roles.cache.has(role.id)) {
             const embed = new EmbedBuilder()
                 .setDescription(`> <@${user.id}> is already <@&${roleId}>.`)
-                .setColor(0xFFD700);
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
         }
 
         await member.roles.add(role);
 
-        // Optional: Log the addition in a specific channel
         const announcementChannel = interaction.guild.channels.cache.get(config.pugsChannelId);
         if (announcementChannel) {
             const announcementEmbed = new EmbedBuilder()
                 .setAuthor({ name: member.user.username, iconURL: member.user.displayAvatarURL() })
                 .setTitle('PUGS Addition')
                 .setDescription(`> <@${user.id}> has been added to <@&${roleId}>.\n- **Added By:** <@${interaction.user.id}>.`)
-                .setColor(role.color || 0x00FF00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             await announcementChannel.send({ embeds: [announcementEmbed] }).then(sentMessage => {
-                sentMessage.react('🔥'); // Fire emoji for addition
+                sentMessage.react('🔥');
             });
         }
 
-        // Confirmation Embed
         const successEmbed = new EmbedBuilder()
             .setDescription(`> Successfully added <@${user.id}> to <@&${roleId}>.`)
-            .setColor(0x00FF00)
+            .setColor(getEmbedColor(interaction, type))
             .setTimestamp();
-
         return interaction.editReply({ embeds: [successEmbed] });
-
     } catch (error) {
         logger.error('Error adding PUGs role:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while adding the PUGs role.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction, type))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
@@ -1167,24 +1069,22 @@ const handleRemove = async (interaction) => {
     await interaction.deferReply({ ephemeral: false });
 
     const user = interaction.options.getUser('user');
-    const type = interaction.options.getString('type'); // 'pugs' or 'pugs_trial' (optional, if needed)
+    const type = interaction.options.getString('type'); // 'pugs' or 'pugs_trial' (optional)
     const executor = interaction.member;
 
-    // Permission check using the allowedRoles list
     if (!allowedRoles.some(roleId => executor.roles.cache.has(roleId))) {
         const embed = new EmbedBuilder()
             .setTitle('No Permission')
             .setDescription(`You need one of the following roles to use this command:\n- ${allowedRoles.map(roleId => `<@&${roleId}>`).join('\n- ')}`)
-            .setColor(0x980e00);
-
+            .setColor(getEmbedColor(interaction, type || 'pugs'))
+            .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
 
-    // Validate the type if provided
     if (type && type !== 'pugs' && type !== 'pugs_trial') {
         const embed = new EmbedBuilder()
             .setDescription('Invalid type specified. Please choose either `pugs` or `pugs_trial`.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction, type))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
@@ -1194,7 +1094,6 @@ const handleRemove = async (interaction) => {
         let rolesToRemove = [];
 
         if (type) {
-            // Specific type removal
             const roleId = type === 'pugs_trial' ? config.pugsTrialRoleId : config.pugsRoleId;
             const role = interaction.guild.roles.cache.get(roleId);
 
@@ -1202,7 +1101,7 @@ const handleRemove = async (interaction) => {
                 logger.error(`PUGs Role with ID ${roleId} not found.`);
                 const embed = new EmbedBuilder()
                     .setDescription('PUGs role not found. Please contact an administrator.')
-                    .setColor(0x980e00)
+                    .setColor(getEmbedColor(interaction, type))
                     .setTimestamp();
                 return interaction.editReply({ embeds: [embed] });
             }
@@ -1210,13 +1109,13 @@ const handleRemove = async (interaction) => {
             if (!member.roles.cache.has(role.id)) {
                 const embed = new EmbedBuilder()
                     .setDescription(`> <@${user.id}> does not have the <@&${roleId}> role.`)
-                    .setColor(0xFFD700);
+                    .setColor(getEmbedColor(interaction, type))
+                    .setTimestamp();
                 return interaction.editReply({ embeds: [embed] });
             }
 
             rolesToRemove.push(role);
         } else {
-            // Remove both pugs and pugs_trial roles if no type is specified
             const pugsRole = interaction.guild.roles.cache.get(config.pugsRoleId);
             const pugsTrialRole = interaction.guild.roles.cache.get(config.pugsTrialRoleId);
 
@@ -1224,7 +1123,7 @@ const handleRemove = async (interaction) => {
                 logger.error(`PUGs Role(s) not found.`);
                 const embed = new EmbedBuilder()
                     .setDescription('PUGs or PUGs Trial role not found.')
-                    .setColor(0x980e00)
+                    .setColor(getEmbedColor(interaction))
                     .setTimestamp();
                 return interaction.editReply({ embeds: [embed] });
             }
@@ -1232,7 +1131,8 @@ const handleRemove = async (interaction) => {
             if (!member.roles.cache.has(pugsRole.id) && !member.roles.cache.has(pugsTrialRole.id)) {
                 const embed = new EmbedBuilder()
                     .setDescription(`> <@${user.id}> does not have any PUGs roles.`)
-                    .setColor(0xFFD700);
+                    .setColor(getEmbedColor(interaction))
+                    .setTimestamp();
                 return interaction.editReply({ embeds: [embed] });
             }
 
@@ -1240,10 +1140,8 @@ const handleRemove = async (interaction) => {
             if (member.roles.cache.has(pugsTrialRole.id)) rolesToRemove.push(pugsTrialRole);
         }
 
-        // Remove roles
         await member.roles.remove(rolesToRemove);
 
-        // Optional: Log the removal in a specific channel
         const announcementChannel = interaction.guild.channels.cache.get(config.pugsChannelId);
         if (announcementChannel) {
             rolesToRemove.forEach(role => {
@@ -1251,89 +1149,74 @@ const handleRemove = async (interaction) => {
                     .setAuthor({ name: member.user.username, iconURL: member.user.displayAvatarURL() })
                     .setTitle('PUGS Removal')
                     .setDescription(`> <@${user.id}> has been removed from <@&${role.id}>.\n- **Removed By:** <@${interaction.user.id}>.`)
-                    .setColor(role.color || 0xFF0000)
+                    .setColor(getEmbedColor(interaction, type || 'pugs'))
                     .setTimestamp();
-
                 announcementChannel.send({ embeds: [announcementEmbed] }).then(sentMessage => {
-                    sentMessage.react('💔'); // Heart emoji for removal
+                    sentMessage.react('💔');
                 });
             });
         }
 
-        // Confirmation Embed
         const successEmbed = new EmbedBuilder()
             .setDescription(`> Successfully removed ${rolesToRemove.map(role => `<@&${role.id}>`).join(' and ')} from <@${user.id}>.`)
-            .setColor(0xFF0000);
-
+            .setColor(getEmbedColor(interaction, type || 'pugs'))
+            .setTimestamp();
         return interaction.editReply({ embeds: [successEmbed] });
-
     } catch (error) {
         logger.error('Error removing PUGs role:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while removing the PUGs role.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction, type || 'pugs'))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
 };
-
 
 /**
  * Handle the Add to Pugs/Pugs Trial button
  * @param {ButtonInteraction} interaction 
  */
 const handleAddToPugs = async (interaction) => {
-    // Define the action prefix
     const actionPrefix = 'add_to_pugs_';
-
-    // Replace deprecated 'ephemeral' with flags
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    const customId = interaction.customId;
 
-    const customId = interaction.customId; // e.g., 'add_to_pugs_pugs_trial_179'
-
-    // Check if customId starts with the action prefix
     if (!customId.startsWith(actionPrefix)) {
         logger.warn(`Invalid customId prefix for add_to_pugs: ${customId}`);
         const embed = new EmbedBuilder()
             .setDescription('Invalid interaction prefix.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
-        return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+        return interaction.editReply({ embeds: [embed] });
     }
 
-    // Remove the action prefix and split the remaining string
-    const remaining = customId.slice(actionPrefix.length); // 'pugs_trial_179'
-    const parts = remaining.split('_'); // ['pugs', 'trial', '179']
+    const remaining = customId.slice(actionPrefix.length);
+    const parts = remaining.split('_');
 
-    // At least type and pollId should be present
     if (parts.length < 2) {
         logger.warn(`Invalid customId format after prefix for add_to_pugs: ${customId}`);
         const embed = new EmbedBuilder()
             .setDescription('Invalid interaction format.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
-        return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+        return interaction.editReply({ embeds: [embed] });
     }
 
-    // Extract type and pollId
-    const pollId = parts.pop(); // '179'
-    const type = parts.join('_'); // 'pugs_trial'
+    const pollId = parts.pop();
+    const type = parts.join('_');
 
-    // Log the parsed components for debugging
     logger.debug(`Parsed customId - Type: ${type}, Poll ID: ${pollId}`);
 
-    // Validate the type
     if (type !== 'pugs' && type !== 'pugs_trial') {
         logger.warn(`Ignoring non-pugs type: ${type}`);
         const embed = new EmbedBuilder()
             .setDescription('This interaction is not valid for PUGS polls.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction, type))
             .setTimestamp();
-        return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+        return interaction.editReply({ embeds: [embed] });
     }
 
     try {
-        // Fetch poll details using pollId and type
         const [polls] = await pool.execute(
             'SELECT * FROM polls WHERE id = ? AND type = ? AND active = 0',
             [pollId, type]
@@ -1343,25 +1226,23 @@ const handleAddToPugs = async (interaction) => {
             logger.warn(`Poll not found or is still active for poll_id=${pollId} and type=${type}`);
             const embed = new EmbedBuilder()
                 .setDescription('Poll not found or is still active.')
-                .setColor(0x980e00);
-
-            return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
+            return interaction.editReply({ embeds: [embed] });
         }
 
         const poll = polls[0];
         const userId = poll.user_id;
         const roleId = type === 'pugs_trial' ? config.pugsTrialRoleId : config.pugsRoleId;
 
-        // Permission check using the allowedRoles list
         if (!allowedRoles.some(rid => interaction.member.roles.cache.has(rid))) {
             const embed = new EmbedBuilder()
                 .setDescription(`Only members with the following roles can use this button:\n${allowedRoles.map(rid => `<@&${rid}>`).join('\n')}`)
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
-        // Fetch the target member
         let member;
         try {
             member = await interaction.guild.members.fetch(userId);
@@ -1373,30 +1254,28 @@ const handleAddToPugs = async (interaction) => {
         if (!member) {
             const embed = new EmbedBuilder()
                 .setDescription('Target member not found.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
-        // Check if the member already has the role
         if (member.roles.cache.has(roleId)) {
             const embed = new EmbedBuilder()
                 .setDescription(`> <@${userId}> is already <@&${roleId}>.`)
-                .setColor(0xFFD700);
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
-        // Add the role to the member
         await member.roles.add(roleId);
 
-        // Fetch the original voting message using message_id
         const messageId = poll.message_id;
         if (!messageId) {
             logger.error(`Poll with ID ${poll.id} does not have a message_id.`);
             const embed = new EmbedBuilder()
                 .setDescription('Original voting message ID not found in the database.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
@@ -1406,8 +1285,8 @@ const handleAddToPugs = async (interaction) => {
             logger.error(`PUGS Channel with ID ${channelId} not found.`);
             const embed = new EmbedBuilder()
                 .setDescription('PUGS voting channel not found.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
@@ -1422,45 +1301,41 @@ const handleAddToPugs = async (interaction) => {
         if (!originalMessage) {
             const embed = new EmbedBuilder()
                 .setDescription('Original voting message not found in the channel.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, type))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
-        // Prepare the new embed for addition
         const additionEmbed = new EmbedBuilder()
             .setAuthor({ name: `${member.user.username}`, iconURL: member.user.displayAvatarURL() })
             .setTitle('PUGS Addition')
             .setDescription(`> <@${userId}> has been added to <@&${roleId}>.\n- **Added By:** <@${interaction.user.id}>`)
-            .setColor('#e96d6d') // Adjust color as needed
+            .setColor(getEmbedColor(interaction, type))
             .setTimestamp();
 
-        // Send the new message as a reply to the original vote message
         const sentAdditionMessage = await channel.send({
             embeds: [additionEmbed],
             reply: { messageReference: originalMessage.id }
         });
 
-        // React to the new message with fire emoji
         await sentAdditionMessage.react('🔥');
 
-        // Send a confirmation to the user who clicked the button
         const confirmationEmbed = new EmbedBuilder()
             .setDescription(`> <@${userId}> has been successfully added to <@&${roleId}>.`)
-            .setColor(0x00FF00)
+            .setColor(getEmbedColor(interaction, type))
             .setTimestamp();
         await interaction.editReply({ embeds: [confirmationEmbed], flags: MessageFlags.Ephemeral });
-
         logger.info(`Added <@${userId}> to <@&${roleId}> via poll ID ${pollId}.`);
     } catch (error) {
         logger.error(`Error in handleAddToPugs: ${error}`);
         const embed = new EmbedBuilder()
             .setDescription('An unexpected error occurred while processing your request.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 };
+
 /**
  * Handle the `/pugs myvote` command
  * @param {CommandInteraction} interaction
@@ -1478,27 +1353,22 @@ const handleMyVote = async (interaction) => {
         if (polls.length === 0) {
             const noPollsEmbed = new EmbedBuilder()
                 .setDescription('```ini\nYou do not have any polls```')
-                .setColor('#D72F2F')
+                .setColor(getEmbedColor(interaction, 'pugs'))
                 .setTimestamp();
             return interaction.editReply({ embeds: [noPollsEmbed] });
         }
 
         const totalPages = polls.length;
-        let currentPage = 0; // Start with the most recent poll
+        let currentPage = 0;
         const poll = polls[currentPage];
         const status = poll.active ? 'active' : 'inactive';
         const user = interaction.user;
+        const pollIdLabel = totalPages - currentPage;
 
-        // Calculate Poll ID "relative to user" if you want, but that’s just a label
-        const pollIdLabel = totalPages - currentPage; 
-        // or pollIdLabel = currentPage + 1, whichever you prefer
-
-        // Determine the role ID based on poll type
         const roleId = (poll.type === 'pugs_trial') ? config.pugsTrialRoleId : config.pugsRoleId;
         const role = interaction.guild.roles.cache.get(roleId);
-        const embedColor = role ? role.color : '#e96d6d';
+        const embedColor = getEmbedColor(interaction, poll.type);
 
-        // Determine the embed author text based on poll type
         const embedAuthorText = (poll.type === 'pugs_trial') ? 'PUGS Trial Vote' : 'PUGS Vote';
 
         const pollEmbed = new EmbedBuilder()
@@ -1518,9 +1388,6 @@ const handleMyVote = async (interaction) => {
             .setColor(embedColor)
             .setTimestamp();
 
-        // Notice the "View Votes" button changed to:
-        // myvote_viewvotes_<poll.id>
-        // That’s all we need to fetch the poll by ID.
         const buttons = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
@@ -1544,17 +1411,15 @@ const handleMyVote = async (interaction) => {
             embeds: [pollEmbed],
             components: [buttons]
         });
-
     } catch (error) {
         logger.error('Error handling /pugs myvote command:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while fetching your polls.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction, 'pugs'))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
 };
-
 
 /**
  * Handle pagination for the /pugs myvote command
@@ -1562,36 +1427,31 @@ const handleMyVote = async (interaction) => {
  */
 const handleMyVotePagination = async (interaction) => {
     const customId = interaction.customId; 
-    // e.g. "next_myvote_pugs_<userId>_<currentPage>_<poll.type>"
     const parts = customId.split('_');
 
     if (parts.length < 6) {
         logger.warn(`Invalid customId format for myvote pagination: ${customId}`);
         const embed = new EmbedBuilder()
             .setDescription('Invalid pagination interaction.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction, 'pugs'))
             .setTimestamp();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    const action      = parts[0]; // 'next' or 'prev'
-    const type        = parts[1]; // 'myvote'
-    const pollType    = parts[2]; // 'pugs' or 'pugs_trial'
-    const initiatorId = parts[3]; // userId
+    const action      = parts[0];
+    const pollType    = parts[2]; 
+    const initiatorId = parts[3];
     let currentPage   = parseInt(parts[4], 10);
-    // parts[5] = poll.type again, but you might not even need it
 
-    // Check permission
     if (interaction.user.id !== initiatorId) {
         const embed = new EmbedBuilder()
             .setDescription(`> Only <@${initiatorId}> can use these buttons.`)
-            .setColor('#D72F2F')
+            .setColor(getEmbedColor(interaction, pollType))
             .setTimestamp();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     try {
-        // Re-fetch the user's polls
         const [polls] = await pool.execute(
             'SELECT * FROM polls WHERE user_id = ? AND type IN ("pugs", "pugs_trial") ORDER BY created_at DESC',
             [initiatorId]
@@ -1600,14 +1460,13 @@ const handleMyVotePagination = async (interaction) => {
         if (polls.length === 0) {
             const embed = new EmbedBuilder()
                 .setDescription('You do not have any polls.')
-                .setColor(0xFFD700)
+                .setColor(getEmbedColor(interaction, pollType))
                 .setTimestamp();
             return interaction.update({ embeds: [embed], components: [] });
         }
 
         const totalPages = polls.length;
 
-        // Adjust currentPage
         if (action === 'next') {
             currentPage++;
         } else if (action === 'prev') {
@@ -1616,25 +1475,17 @@ const handleMyVotePagination = async (interaction) => {
             logger.warn(`Unknown pagination action: ${action}`);
             const embed = new EmbedBuilder()
                 .setDescription('Unknown pagination action.')
-                .setColor(0xFFD700)
+                .setColor(getEmbedColor(interaction, pollType))
                 .setTimestamp();
             return interaction.reply({ embeds: [embed], ephemeral: true });
         }
 
-        // Clamp the page in [0, totalPages-1]
         if (currentPage < 0) currentPage = 0;
         if (currentPage >= totalPages) currentPage = totalPages - 1;
 
         const poll = polls[currentPage];
         const status = poll.active ? 'active' : 'inactive';
         const pollIndexLabel = currentPage + 1; 
-
-        // Determine embed color
-        const roleId = (poll.type === 'pugs_trial') 
-            ? config.pugsTrialRoleId 
-            : config.pugsRoleId;
-        const role = interaction.guild.roles.cache.get(roleId);
-        const embedColor = role ? role.color : '#e96d6d';
 
         const embedAuthorText = (poll.type === 'pugs_trial')
             ? 'PUGS Trial Vote'
@@ -1647,17 +1498,16 @@ const handleMyVotePagination = async (interaction) => {
             })
             .setDescription(`**Poll ID:** \`${pollIndexLabel}\`\n> **Status:** This poll is currently __\`${status}\`__`)
             .addFields(
-                { name: 'Upvotes 👍',   value: `\`\`\`${poll.upvotes   || 0}\`\`\``, inline: true },
+                { name: 'Upvotes 👍',   value: `\`\`\`${poll.upvotes || 0}\`\`\``, inline: true },
                 { name: 'Downvotes 👎', value: `\`\`\`${poll.downvotes || 0}\`\`\``, inline: true }
             )
             .setFooter({
                 text: `Poll ${pollIndexLabel}/${totalPages}`,
                 iconURL: interaction.user.displayAvatarURL({ dynamic: true })
             })
-            .setColor(embedColor)
+            .setColor(getEmbedColor(interaction, poll.type))
             .setTimestamp();
 
-        // Notice the "View Votes" button uses poll.id
         const buttons = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
@@ -1681,19 +1531,16 @@ const handleMyVotePagination = async (interaction) => {
             embeds: [pollEmbed],
             components: [buttons]
         });
-
         logger.info(`PUGS myvote pagination: user ${initiatorId} navigated to poll ${pollIndexLabel}/${totalPages}`);
-
     } catch (error) {
         logger.error('Error handling myvote pagination:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while handling pagination.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction, 'pugs'))
             .setTimestamp();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
-};  
-
+};
 
 /**
  * Handle the "myvote_viewvotes_<pollId>" button
@@ -1701,7 +1548,6 @@ const handleMyVotePagination = async (interaction) => {
  */
 const handleMyVoteViewVotes = async (interaction) => {
     try {
-        // We can do ephemeral so only the user sees the up/downvoters
         await interaction.deferReply({ ephemeral: true });
 
         const customId = interaction.customId; // e.g. "myvote_viewvotes_179"
@@ -1710,14 +1556,13 @@ const handleMyVoteViewVotes = async (interaction) => {
             logger.warn(`Invalid customId for myvote_viewvotes button: ${customId}`);
             const embed = new EmbedBuilder()
                 .setDescription('Invalid view votes interaction.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, 'pugs'))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
         }
 
-        const pollId = parts[2]; // "179", etc.
+        const pollId = parts[2];
 
-        // Fetch the poll by ID
         const [rows] = await pool.execute(
             'SELECT * FROM polls WHERE id = ?',
             [pollId]
@@ -1726,23 +1571,21 @@ const handleMyVoteViewVotes = async (interaction) => {
         if (rows.length === 0) {
             const embed = new EmbedBuilder()
                 .setDescription('Poll not found.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, 'pugs'))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
         }
 
         const poll = rows[0];
 
-        // If you want to ensure the clicker is the poll owner:
         if (poll.user_id !== interaction.user.id) {
             const embed = new EmbedBuilder()
                 .setDescription('You do not own this poll.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction, 'pugs'))
+                .setTimestamp();
             return interaction.editReply({ embeds: [embed] });
         }
 
-        // Retrieve upvoters/downvoters
         const [upvoters] = await pool.execute(
             'SELECT user_id FROM votes WHERE poll_id = ? AND vote = "upvote"',
             [pollId]
@@ -1759,28 +1602,25 @@ const handleMyVoteViewVotes = async (interaction) => {
             ? downvoters.map(v => `- <@${v.user_id}>`).join('\n')
             : '• No downvotes yet.';
 
-        // Build an embed
         const embed = new EmbedBuilder()
             .setTitle(`Votes for Poll #${poll.id}`)
             .addFields(
-                { name: 'Upvotes 👍',    value: upvoteMentions,    inline: true },
-                { name: 'Downvotes 👎', value: downvoteMentions,  inline: true }
+                { name: 'Upvotes 👍', value: upvoteMentions, inline: true },
+                { name: 'Downvotes 👎', value: downvoteMentions, inline: true }
             )
-            .setColor('#2b2d31')
+            .setColor(getEmbedColor(interaction, 'pugs'))
             .setTimestamp();
 
         await interaction.editReply({ embeds: [embed], components: [] });
-
     } catch (error) {
         logger.error('Error in handleMyVoteViewVotes:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while viewing the votes.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction, 'pugs'))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
 };
-
 
 /**
  * Handle the Add to Pugs/Pugs Trial button in the voting result message
@@ -1790,7 +1630,6 @@ const handleAddToPugsButton = async (interaction) => {
     await handleAddToPugs(interaction);
 };
 
-// Export all handlers and necessary properties
 module.exports = {
     allowedRoles,
     votingAllowedRoles,
