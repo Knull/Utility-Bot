@@ -1,8 +1,0 @@
-{"level":"warn","message":"No handler found for button with customId: next_premium_1155078877803192420_0","service":"discord-bot","timestamp":"2025-01-02 13:04:28"}
-{"level":"warn","message":"No handler found for button with customId: next_list_pugs_1155078877803192420_0","service":"discord-bot","timestamp":"2025-01-02 13:04:53"}
-{"level":"error","message":"Error handling interaction: Error: Unknown column 'initiator_id' in 'field list'","service":"discord-bot","timestamp":"2025-01-02 13:06:32"}
-{"level":"error","message":"Error handling interaction: ReferenceError: getPageEmbed is not defined","service":"discord-bot","timestamp":"2025-01-02 13:39:44"}
-{"level":"error","message":"Error handling interaction: Error [InteractionAlreadyReplied]: The reply to this interaction has already been sent or deferred.","service":"discord-bot","timestamp":"2025-01-02 13:44:22"}
-{"level":"error","message":"Error handling interaction: Error [InteractionNotReplied]: The reply to this interaction has not been sent or deferred.","service":"discord-bot","timestamp":"2025-01-02 13:47:17"}
-{"level":"error","message":"Error handling interaction: Error [InteractionNotReplied]: The reply to this interaction has not been sent or deferred.","service":"discord-bot","timestamp":"2025-01-02 13:47:44"}
-{"level":"error","message":"Error in handleStaffAnnouncement: TypeError: Cannot create property 'Symbol(level)' on string 'Staff announcement (departure) sent for user 454927000490999809 by 1155078877803192420'","service":"discord-bot","timestamp":"2025-01-02 14:14:25"}

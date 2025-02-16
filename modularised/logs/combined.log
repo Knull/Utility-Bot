@@ -1164,3 +1164,18 @@ embeds[0].description[BASE_TYPE_REQUIRED]: This field is required
 2025-02-16 20:45:55 [INFO] Button Interaction Received: customId = voteview_viewvotes_703849003535695932_pups_0
 2025-02-16 20:45:55 [INFO] Handler found for prefix: voteview_viewvotes
 2025-02-16 20:45:56 [INFO] Poll owner fetched: itztalisman
+2025-02-17 00:14:36 [INFO] Button Interaction Received: customId = next_premium_1155078877803192420_0
+2025-02-17 00:14:36 [INFO] Handler found for prefix: next_premium
+2025-02-17 00:14:40 [INFO] Total members with PUGS or PUGS Trial roles: 17
+2025-02-17 00:14:46 [INFO] Total members with PUPS role: 32
+2025-02-17 00:14:48 [INFO] Button Interaction Received: customId = next_list_pups_1155078877803192420_0
+2025-02-17 00:14:48 [INFO] Handler found for prefix: next_list_pups
+2025-02-17 00:14:49 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 2/4
+2025-02-17 00:14:50 [INFO] Button Interaction Received: customId = next_list_pugs_1155078877803192420_0
+2025-02-17 00:14:50 [INFO] Handler found for prefix: next_list_pugs
+2025-02-17 00:14:51 [INFO] Button Interaction Received: customId = prev_list_pups_1155078877803192420_1
+2025-02-17 00:14:51 [INFO] Handler found for prefix: prev_list_pups
+2025-02-17 00:14:51 [INFO] PUGS list pagination: user 1155078877803192420 navigated to page 2/2
+2025-02-17 00:14:51 [INFO] PUPS list pagination: user 1155078877803192420 navigated to page 1/4
+2025-02-17 00:14:52 [INFO] Button Interaction Received: customId = prev_premium_1155078877803192420_1
+2025-02-17 00:14:52 [INFO] Handler found for prefix: prev_premium

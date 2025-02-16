@@ -285,7 +285,7 @@ const handleVoteButton = async (interaction, voteType) => {
                     }
 
                     const embed = EmbedBuilder.from(message.embeds[0])
-                        .setDescription(`A vote has been created for <@${targetUserId}> to join <@&${config.pupsRoleId}>.`)
+                        .setDescription(`> A vote has been created for <@${targetUserId}> to join <@&${config.pupsRoleId}>.`)
                         .setFields( 
                             { name: 'Upvotes 👍', value: `\`\`\`${updatedPoll.upvotes}\`\`\``, inline: true },
                             { name: 'Downvotes 👎', value: `\`\`\`${updatedPoll.downvotes}\`\`\``, inline: true }
@@ -383,7 +383,7 @@ const handleVoteButton = async (interaction, voteType) => {
                 }
 
                 const embed = EmbedBuilder.from(message.embeds[0])
-                    .setDescription(`A vote has been created for <@${targetUserId}> to join <@&${config.pupsRoleId}>.`)
+                    .setDescription(`> A vote has been created for <@${targetUserId}> to join <@&${config.pupsRoleId}>.`)
                     .setFields( 
                         { name: 'Upvotes 👍', value: `\`\`\`${updatedPoll.upvotes}\`\`\``, inline: true },
                         { name: 'Downvotes 👎', value: `\`\`\`${updatedPoll.downvotes}\`\`\``, inline: true }
@@ -571,7 +571,7 @@ const handleEndVote = async (interaction) => {
 
         // Update the embed with the final vote counts
         const updatedEmbed = EmbedBuilder.from(message.embeds[0])
-            .setDescription(`A vote has been created for <@${targetUserId}> to join <@&${config.pupsRoleId}>.`)
+            .setDescription(`> A vote has been created for <@${targetUserId}> to join <@&${config.pupsRoleId}>.`)
             .setFields( 
                 { name: 'Upvotes 👍', value: `\`\`\`${upvotes}\`\`\``, inline: true },
                 { name: 'Downvotes 👎', value: `\`\`\`${downvotes}\`\`\``, inline: true }
