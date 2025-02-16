@@ -302,7 +302,7 @@ const handleVoteButton = async (interaction, voteType) => {
                     }
 
                     const updatedEmbed = EmbedBuilder.from(message.embeds[0])
-                        .setDescription(`A vote has been created for <@${userId}> to join <@&${roleId}>.`)
+                        .setDescription(`> A vote has been created for <@${userId}> to join <@&${roleId}>.`)
                         .setFields( 
                             { name: 'Upvotes 👍', value: `\`\`\`${updatedPoll.upvotes}\`\`\``, inline: true },
                             { name: 'Downvotes 👎', value: `\`\`\`${updatedPoll.downvotes}\`\`\``, inline: true }
@@ -408,7 +408,7 @@ const handleVoteButton = async (interaction, voteType) => {
                 }
 
                 const updatedEmbed = EmbedBuilder.from(message.embeds[0])
-                    .setDescription(`A vote has been created for <@${userId}> to join <@&${roleId}>.`)
+                    .setDescription(`> A vote has been created for <@${userId}> to join <@&${roleId}>.`)
                     .setFields( 
                         { name: 'Upvotes 👍', value: `\`\`\`${updatedPoll.upvotes}\`\`\``, inline: true },
                         { name: 'Downvotes 👎', value: `\`\`\`${updatedPoll.downvotes}\`\`\``, inline: true }

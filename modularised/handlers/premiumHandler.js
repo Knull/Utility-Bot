@@ -1,6 +1,13 @@
-// handlers/premiumHandler.js
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const config = require('../config/config');
+
+// Helper function: returns the Premium role’s color, or defaults to a gold color.
+function getPremiumEmbedColor(interaction) {
+    const premiumRole = interaction.guild.roles.cache.get(config.premiumRoleId);
+    return premiumRole?.color || 0xc79504;
+}
+
+const errorColor = 0xe74c3c; // Red for errors
 
 /**
  * Handles the /premium add and /premium remove subcommands.
@@ -54,30 +61,34 @@ async function addPremiumRole(interaction, member, user) {
     if (member.roles.cache.has(premiumRole.id)) {
         const embed = new EmbedBuilder()
             .setDescription(`<@${user.id}> already has the <@&${premiumRole.id}> role.`)
-            .setColor('#e74c3c'); // Red color for error
+            .setColor(errorColor);
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    // Add Premium role to the user
     try {
         await member.roles.add(premiumRole);
         console.log(`Added Premium role to user ${user.id}`);
 
+        // Updated design: embed author is the user's avatar and name; title is "Premium Addition";
+        // description now includes the "Added by" line.
         const embed = new EmbedBuilder()
-            .setDescription(`> Added <@${user.id}> to <@&${premiumRole.id}>.`)
-            .setColor('#c79504'); // Gold color for success
+            .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
+            .setTitle('Premium Addition')
+            .setDescription(`> <@${user.id}> has been added to <@&${premiumRole.id}>.\n- **Added by:** <@${interaction.user.id}>`)
+            .setColor(getPremiumEmbedColor(interaction))
+            .setTimestamp();
 
         await interaction.reply({ embeds: [embed], ephemeral: false });
 
-        // Send announcement to premium-announcements channel
+        // Announcement to the premium announcements channel
         const announcementChannel = interaction.guild.channels.cache.find(ch => ch.id === config.premiumChannelId);
         if (announcementChannel) {
             const announcementEmbed = new EmbedBuilder()
                 .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
-                .setTitle("Premium Addition")
-                .setDescription(`> <@${user.id}> has been added to <@&${premiumRole.id}>`)
-                .addFields({ name: 'Added by:', value: `<@${interaction.user.id}>` })
-                .setColor('#c79504');
+                .setTitle('Premium Addition')
+                .setDescription(`> <@${user.id}> has been added to <@&${premiumRole.id}>.\n- **Added by:** <@${interaction.user.id}>`)
+                .setColor(getPremiumEmbedColor(interaction))
+                .setTimestamp();
 
             await announcementChannel.send({ embeds: [announcementEmbed] });
         } else {
@@ -102,30 +113,33 @@ async function removePremiumRole(interaction, member, user) {
     if (!member.roles.cache.has(premiumRole.id)) {
         const embed = new EmbedBuilder()
             .setDescription(`<@${user.id}> does not have the <@&${premiumRole.id}> role.`)
-            .setColor('#e74c3c'); // Red color for error
+            .setColor(errorColor);
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    // Remove Premium role from the user
     try {
         await member.roles.remove(premiumRole);
         console.log(`Removed Premium role from user ${user.id}`);
 
+        // Updated design: same style as addition, but with title "Premium Removal"
         const embed = new EmbedBuilder()
-            .setDescription(`> Removed <@${user.id}> from <@&${premiumRole.id}>.`)
-            .setColor('#c79504'); // Gold color for success
+            .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
+            .setTitle('Premium Removal')
+            .setDescription(`> <@${user.id}> has been removed from <@&${premiumRole.id}>.\n- **Removed by:** <@${interaction.user.id}>`)
+            .setColor(getPremiumEmbedColor(interaction))
+            .setTimestamp();
 
         await interaction.reply({ embeds: [embed], ephemeral: false });
 
-        // Send announcement to premium-announcements channel
+        // Announcement to the premium announcements channel
         const announcementChannel = interaction.guild.channels.cache.find(ch => ch.id === config.premiumChannelId);
         if (announcementChannel) {
             const announcementEmbed = new EmbedBuilder()
                 .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
-                .setTitle("Premium Removal")
-                .setDescription(`> <@${user.id}> has been removed from <@&${premiumRole.id}>`)
-                .addFields({ name: 'Removed by:', value: `<@${interaction.user.id}>` })
-                .setColor('#c79504');
+                .setTitle('Premium Removal')
+                .setDescription(`> <@${user.id}> has been removed from <@&${premiumRole.id}>.\n- **Removed by:** <@${interaction.user.id}>`)
+                .setColor(getPremiumEmbedColor(interaction))
+                .setTimestamp();
 
             await announcementChannel.send({ embeds: [announcementEmbed] });
         } else {
@@ -148,9 +162,8 @@ async function handlePremiumList(interaction) {
         return interaction.reply({ content: 'Premium role not found in this server.', ephemeral: true });
     }
 
-    // Fetch all members with the Premium role
     try {
-        await interaction.guild.members.fetch(); // Ensure all members are cached
+        await interaction.guild.members.fetch();
     } catch (error) {
         console.error('Error fetching guild members:', error);
         return interaction.reply({ content: 'Error fetching guild members.', ephemeral: true });
@@ -158,42 +171,31 @@ async function handlePremiumList(interaction) {
 
     const membersWithRole = interaction.guild.members.cache.filter(member => member.roles.cache.has(premiumRole.id));
     const membersArray = Array.from(membersWithRole.values());
-
     const pageSize = 10;
     const totalPages = Math.ceil(membersArray.length / pageSize);
 
     if (totalPages === 0) {
         const noMembersEmbed = new EmbedBuilder()
             .setDescription('```ini\nNo members with Premium role found.\n```')
-            .setColor(0x980e00); // Dark red color
+            .setColor(0xe74c3c);
         return interaction.reply({ embeds: [noMembersEmbed], ephemeral: true });
     }
 
-    let currentPage = 0; // Start with the first page
-    const paginatedMembers = membersArray.slice(
-        currentPage * pageSize,
-        (currentPage + 1) * pageSize
-    );
-
+    let currentPage = 0;
+    const paginatedMembers = membersArray.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
     const memberList = paginatedMembers
-        .map(
-            (member, index) =>
-                `\`\`${index + 1 + currentPage * pageSize}.\`\` <@${member.id}>`
-        )
+        .map((member, index) => `\`\`${index + 1 + currentPage * pageSize}.\`\` <@${member.id}>`)
         .join('\n');
 
     const userPosition = membersArray.findIndex(member => member.id === interaction.user.id) + 1;
-
     const listEmbed = new EmbedBuilder()
         .setAuthor({ name: 'Premium Members List', iconURL: interaction.guild.iconURL() })
-        .setDescription(
-            `Mode: **Premium** [${currentPage + 1}/${totalPages}]\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n${memberList}\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬`
-        )
+        .setDescription(`Mode: **Premium** [${currentPage + 1}/${totalPages}]\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n${memberList}\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬`)
         .setFooter({
             text: `${userPosition > 0 ? userPosition : 'N/A'}. [${interaction.user.username}]`,
             iconURL: interaction.user.displayAvatarURL(),
         })
-        .setColor('#c79504'); // Gold color
+        .setColor(getPremiumEmbedColor(interaction));
 
     const buttons = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
