@@ -15,7 +15,8 @@ const logger = require('../../utilities/logger');
 // List of roles allowed to use PUGS commands (excluding pups managers)
 const allowedRoles = [
     config.pugsManagerRoleId,
-    config.premiumManagerRoleId
+    config.premiumManagerRoleId,
+    config.pppOwnerRoleId,
     // Add more role IDs if necessary
 ];
 

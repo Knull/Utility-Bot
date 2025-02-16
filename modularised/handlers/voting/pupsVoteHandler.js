@@ -25,10 +25,11 @@ const votingAllowedRoles = [
     config.pugsRoleId,
     config.premiumRoleId
 ];
+
 function getEmbedColor(interaction) {
     const pupsRole = interaction.guild.roles.cache.get(config.pupsRoleId);
     return pupsRole?.color || 0xe96d6d;
-  }
+}
   
 /**
  * Handle the `/pups vote` command
@@ -49,8 +50,7 @@ const handleVote = async (interaction) => {
                 .setDescription(`Only these members can use this command:\n${allowedRoles
                     .map(roleId => `- <@&${roleId}>`)
                     .join('\n')}`)
-                                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -60,7 +60,7 @@ const handleVote = async (interaction) => {
         if (rows.length > 0) {
             const embed = new EmbedBuilder()
                 .setDescription('A poll is already active for this user.')
-                                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -81,7 +81,7 @@ const handleVote = async (interaction) => {
                 { name: 'Downvotes 👎', value: '```0```', inline: true }
             )
             .setFooter({ text: `Created by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
-            .setColor(pupsRole.color || 0xe96d6d)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
 
         const buttons = new ActionRowBuilder()
@@ -108,7 +108,7 @@ const handleVote = async (interaction) => {
             logger.error(`PUPS Channel with ID ${config.pupsChannelId} not found.`);
             const errorEmbed = new EmbedBuilder()
                 .setDescription('PUPS voting channel not found.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [errorEmbed] });
         }
@@ -120,7 +120,7 @@ const handleVote = async (interaction) => {
 
         const successEmbed = new EmbedBuilder()
             .setDescription('Vote created successfully.')
-            .setColor(0xe96d6d)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
 
         return interaction.editReply({ embeds: [successEmbed] });
@@ -128,7 +128,7 @@ const handleVote = async (interaction) => {
         logger.error('Error handling /pups vote command:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while creating the vote.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
@@ -140,7 +140,7 @@ const handleVote = async (interaction) => {
  * @param {string} voteType - 'upvote' or 'downvote'
  */
 const handleVoteButton = async (interaction, voteType) => {
-    await interaction.deferReply({ ephemeral: true }); // Changed from flags: InteractionResponseFlags.EPHEMERAL
+    await interaction.deferReply({ ephemeral: true });
 
     try {
         const customId = interaction.customId;
@@ -151,7 +151,7 @@ const handleVoteButton = async (interaction, voteType) => {
             logger.warn(`Invalid customId: ${customId}`);
             const embed = new EmbedBuilder()
                 .setDescription('Invalid interaction.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -164,7 +164,7 @@ const handleVoteButton = async (interaction, voteType) => {
             logger.warn(`Ignoring non-pups type: ${type}`);
             const embed = new EmbedBuilder()
                 .setDescription('This interaction is not valid for PUPS polls.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -173,7 +173,7 @@ const handleVoteButton = async (interaction, voteType) => {
         if (!votingAllowedRoles.some(roleId => interaction.member.roles.cache.has(roleId))) {
             const embed = new EmbedBuilder()
                 .setDescription(`You do not have permission to vote. Required roles:\n${votingAllowedRoles.map(roleId => `<@&${roleId}>`).join('\n')}`)
-                .setColor(pupsRole.color || 0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -182,7 +182,7 @@ const handleVoteButton = async (interaction, voteType) => {
         if (interaction.user.id === targetUserId) {
             const embed = new EmbedBuilder()
                 .setDescription('You cannot vote on your own poll.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -193,7 +193,7 @@ const handleVoteButton = async (interaction, voteType) => {
             logger.warn('No active poll found for the user.');
             const embed = new EmbedBuilder()
                 .setDescription('No active poll found for this user.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -208,7 +208,7 @@ const handleVoteButton = async (interaction, voteType) => {
             if (previousVote === voteType) {
                 const embed = new EmbedBuilder()
                     .setDescription(`You have already ${voteType}d this poll.`)
-                    .setColor(0x980e00)
+                    .setColor(getEmbedColor(interaction))
                     .setTimestamp();
                 return interaction.editReply({ embeds: [embed] });
             } else {
@@ -246,7 +246,7 @@ const handleVoteButton = async (interaction, voteType) => {
                         logger.error(`PUPS Channel with ID ${config.pupsChannelId} not found.`);
                         const errorEmbed = new EmbedBuilder()
                             .setDescription('PUPS voting channel not found.')
-                            .setColor(0x980e00)
+                            .setColor(getEmbedColor(interaction))
                             .setTimestamp();
                         return interaction.editReply({ embeds: [errorEmbed] });
                     }
@@ -263,7 +263,7 @@ const handleVoteButton = async (interaction, voteType) => {
                     if (!targetMember) {
                         const embed = new EmbedBuilder()
                             .setDescription('Target member not found.')
-                            .setColor(0x980e00)
+                            .setColor(getEmbedColor(interaction))
                             .setTimestamp();
                         return interaction.editReply({ embeds: [embed] });
                     }
@@ -279,7 +279,7 @@ const handleVoteButton = async (interaction, voteType) => {
                         logger.error('Original voting message not found.');
                         const embed = new EmbedBuilder()
                             .setDescription('Original voting message not found.')
-                            .setColor(0x980e00)
+                            .setColor(getEmbedColor(interaction))
                             .setTimestamp();
                         return interaction.editReply({ embeds: [embed] });
                     }
@@ -296,7 +296,7 @@ const handleVoteButton = async (interaction, voteType) => {
 
                     const replyEmbed = new EmbedBuilder()
                         .setDescription(`You have cast a **${voteType}**.`)
-                        .setColor(0xe96d6d)
+                        .setColor(getEmbedColor(interaction))
                         .setTimestamp();
 
                     return interaction.editReply({ embeds: [replyEmbed] });
@@ -304,7 +304,7 @@ const handleVoteButton = async (interaction, voteType) => {
                     logger.error('Error changing vote:', error);
                     const embed = new EmbedBuilder()
                         .setDescription('An error occurred while changing your vote.')
-                        .setColor(0x980e00)
+                        .setColor(getEmbedColor(interaction))
                         .setTimestamp();
                     return interaction.editReply({ embeds: [embed] });
                 }
@@ -344,7 +344,7 @@ const handleVoteButton = async (interaction, voteType) => {
                     logger.error(`PUPS Channel with ID ${config.pupsChannelId} not found.`);
                     const errorEmbed = new EmbedBuilder()
                         .setDescription('PUPS voting channel not found.')
-                        .setColor(0x980e00)
+                        .setColor(getEmbedColor(interaction))
                         .setTimestamp();
                     return interaction.editReply({ embeds: [errorEmbed] });
                 }
@@ -361,7 +361,7 @@ const handleVoteButton = async (interaction, voteType) => {
                 if (!targetMember) {
                     const embed = new EmbedBuilder()
                         .setDescription('Target member not found.')
-                        .setColor(0x980e00)
+                        .setColor(getEmbedColor(interaction))
                         .setTimestamp();
                     return interaction.editReply({ embeds: [embed] });
                 }
@@ -377,7 +377,7 @@ const handleVoteButton = async (interaction, voteType) => {
                     logger.error('Original voting message not found.');
                     const embed = new EmbedBuilder()
                         .setDescription('Original voting message not found.')
-                        .setColor(0x980e00)
+                        .setColor(getEmbedColor(interaction))
                         .setTimestamp();
                     return interaction.editReply({ embeds: [embed] });
                 }
@@ -394,7 +394,7 @@ const handleVoteButton = async (interaction, voteType) => {
 
                 const replyEmbed = new EmbedBuilder()
                     .setDescription(`You have cast a **${voteType}**.`)
-                    .setColor(0xe96d6d)
+                    .setColor(getEmbedColor(interaction))
                     .setTimestamp();
 
                 return interaction.editReply({ embeds: [replyEmbed] });
@@ -402,7 +402,7 @@ const handleVoteButton = async (interaction, voteType) => {
                 logger.error('Error casting vote:', error);
                 const embed = new EmbedBuilder()
                     .setDescription('An error occurred while casting your vote.')
-                    .setColor(0x980e00)
+                    .setColor(getEmbedColor(interaction))
                     .setTimestamp();
                 return interaction.editReply({ embeds: [embed] });
             }
@@ -411,7 +411,7 @@ const handleVoteButton = async (interaction, voteType) => {
         logger.error('Error handling vote button interaction:', error);
         const embed = new EmbedBuilder()
             .setDescription('An unexpected error occurred while processing your vote.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
@@ -438,7 +438,7 @@ const handleDownvote = async (interaction) => {
  * @param {ButtonInteraction} interaction 
  */
 const handleEndVote = async (interaction) => {
-    await interaction.deferReply({ ephemeral: true }); // Changed from flags: InteractionResponseFlags.EPHEMERAL
+    await interaction.deferReply({ ephemeral: true });
 
     try {
         const customId = interaction.customId;
@@ -448,7 +448,7 @@ const handleEndVote = async (interaction) => {
             logger.warn(`Invalid customId: ${customId}`);
             const embed = new EmbedBuilder()
                 .setDescription('Invalid interaction.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -461,7 +461,7 @@ const handleEndVote = async (interaction) => {
             logger.warn(`Ignoring non-pups type: ${type}`);
             const embed = new EmbedBuilder()
                 .setDescription('This interaction is not valid for PUPS polls.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -472,19 +472,18 @@ const handleEndVote = async (interaction) => {
             logger.warn('No active poll found for the user.');
             const embed = new EmbedBuilder()
                 .setDescription('No active poll found for this user.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
 
         const poll = polls[0];
-        const pupsRole = interaction.guild.roles.cache.get(config.pupsRoleId);
 
         // Permission check using the allowedRoles list
         if (!allowedRoles.some(roleId => interaction.member.roles.cache.has(roleId))) {
             const embed = new EmbedBuilder()
                 .setDescription(`Only people with these roles can use this button:\n${allowedRoles.map(roleId => `<@&${roleId}>`).join('\n')}`)
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -496,7 +495,7 @@ const handleEndVote = async (interaction) => {
             logger.error('Error deactivating poll:', error);
             const embed = new EmbedBuilder()
                 .setDescription('An error occurred while ending the vote.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -533,7 +532,7 @@ const handleEndVote = async (interaction) => {
             logger.error(`PUPS Channel with ID ${config.pupsChannelId} not found.`);
             const embed = new EmbedBuilder()
                 .setDescription('PUPS voting channel not found.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -549,7 +548,7 @@ const handleEndVote = async (interaction) => {
         if (!targetMember) {
             const embed = new EmbedBuilder()
                 .setDescription('Target member not found.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -565,7 +564,7 @@ const handleEndVote = async (interaction) => {
             logger.error('Original voting message not found.');
             const embed = new EmbedBuilder()
                 .setDescription('Original voting message not found.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -586,7 +585,7 @@ const handleEndVote = async (interaction) => {
             const resultEmbed = new EmbedBuilder()
                 .setAuthor({ name: `${targetMember.user.username} | PUPS Vote Results`, iconURL: targetMember.user.displayAvatarURL() })
                 .setDescription(`**Upvotes 👍:** \`\`\`${upvotes}\`\`\`\n**Downvotes 💔:** \`\`\`${downvotes}\`\`\`\n<@${targetUserId}> has **${voteWon ? 'won' : 'lost'}** the vote!`)
-                .setColor(resultColor)
+                .setColor(getEmbedColor(interaction))
                 .setFooter({ text: `Created by ${message.embeds[0].footer.text.replace('Created by ', '')}`, iconURL: message.embeds[0].footer.iconURL })
                 .setTimestamp();
 
@@ -612,14 +611,12 @@ const handleEndVote = async (interaction) => {
                 );
             }
 
-            
-
             await interaction.editReply({ embeds: [resultEmbed], components: [actionButtons] });
         } catch (error) {
             logger.error(`Error handling end_vote interaction: ${error}`);
             const embed = new EmbedBuilder()
                 .setDescription('Error handling end_vote interaction.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -627,14 +624,11 @@ const handleEndVote = async (interaction) => {
         logger.error('Error handling End Vote:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while ending the vote.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
 };
-
-
-
 
 /**
  * Handle the `/pups create` command for managers to create their own PUPS votes
@@ -653,7 +647,7 @@ const handleCreate = async (interaction) => {
             .setDescription(`Only these members can use this command:\n${allowedRoles
                 .map(roleId => `- <@&${roleId}>`)
                 .join('\n')}`)
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
 
         return interaction.editReply({ embeds: [embed] });
@@ -665,7 +659,7 @@ const handleCreate = async (interaction) => {
         if (activePolls.length > 0) {
             const embed = new EmbedBuilder()
                 .setDescription('You already have an active PUPS poll.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -682,7 +676,7 @@ const handleCreate = async (interaction) => {
         if (!memberData) {
             const embed = new EmbedBuilder()
                 .setDescription('Member data not found.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -693,7 +687,7 @@ const handleCreate = async (interaction) => {
         if (isPugs || isPremium) {
             const embed = new EmbedBuilder()
                 .setDescription('You cannot create a PUPS poll while holding PUGS or PREMIUM roles.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -714,7 +708,7 @@ const handleCreate = async (interaction) => {
                 { name: 'Downvotes 👎', value: '```0```', inline: true }
             )
             .setFooter({ text: `Created by ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
-            .setColor('#e96d6d')
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
 
         const buttons = new ActionRowBuilder()
@@ -741,7 +735,7 @@ const handleCreate = async (interaction) => {
             logger.error(`PUPS Channel with ID ${config.pupsChannelId} not found.`);
             const errorEmbed = new EmbedBuilder()
                 .setDescription('PUPS voting channel not found.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [errorEmbed] });
         }
@@ -753,7 +747,7 @@ const handleCreate = async (interaction) => {
 
         const successEmbed = new EmbedBuilder()
             .setDescription('Your PUPS vote has been created successfully.')
-            .setColor(0xe96d6d)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
 
         return interaction.editReply({ embeds: [successEmbed] });
@@ -761,7 +755,7 @@ const handleCreate = async (interaction) => {
         logger.error('Error creating PUPS poll:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while creating your PUPS poll.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
@@ -783,7 +777,7 @@ const handleList = async (interaction) => {
             logger.error(`PUPS Role with ID ${config.pupsRoleId} not found.`);
             const embed = new EmbedBuilder()
                 .setDescription('PUPS role not found.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -804,7 +798,7 @@ const handleList = async (interaction) => {
         if (totalPages === 0) {
             const noMembersEmbed = new EmbedBuilder()
                 .setDescription('```ini\nNo members with PUPS role found.\n```')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [noMembersEmbed] });
         }
@@ -815,13 +809,11 @@ const handleList = async (interaction) => {
         const memberList = paginatedMembers.map((member, index) => `\`\`${index + 1 + currentPage * pageSize}.\`\` <@${member.id}>`).join('\n');
         const userPosition = membersArray.findIndex(member => member.id === interaction.user.id) + 1;
 
-        const pupsRoleColor = pupsRole.color || 0xe96d6d; // Fallback color if role has no color
-
         const listEmbed = new EmbedBuilder()
             .setAuthor({ name: 'PUPS List', iconURL: interaction.guild.iconURL() })
             .setDescription(`Mode: **PUPS** [${currentPage + 1}/${totalPages}]\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n${memberList}\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬`)
             .setFooter({ text: `${userPosition}. [${interaction.user.username}]`, iconURL: interaction.user.displayAvatarURL() })
-            .setColor(pupsRoleColor)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
 
         const buttons = new ActionRowBuilder()
@@ -843,11 +835,12 @@ const handleList = async (interaction) => {
         logger.error('Error handling /pups list command:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while fetching the PUPS list.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
 };
+
 /**
  * Handle pagination for the PUPS list
  * @param {ButtonInteraction} interaction 
@@ -860,7 +853,7 @@ const handlePagination = async (interaction) => {
         logger.warn(`Invalid customId format for pagination: ${customId}`);
         const embed = new EmbedBuilder()
             .setDescription('Invalid pagination interaction.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
@@ -875,7 +868,7 @@ const handlePagination = async (interaction) => {
     if (interaction.user.id !== userId) {
         const embed = new EmbedBuilder()
             .setDescription(`> Only <@${userId}> can interact with these buttons.`)
-            .setColor('#D72F2F')
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
@@ -886,7 +879,7 @@ const handlePagination = async (interaction) => {
         logger.error(`PUPS Role with ID ${config.pupsRoleId} not found.`);
         const embed = new EmbedBuilder()
             .setDescription('PUPS role not found.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
@@ -904,7 +897,7 @@ const handlePagination = async (interaction) => {
         if (membersArray.length === 0) {
             const embed = new EmbedBuilder()
                 .setDescription('No members have the PUPS role.')
-                .setColor(0xFFD700)
+                .setColor(getEmbedColor(interaction))
                 .setTimestamp();
             return interaction.update({ embeds: [embed], components: [] });
         }
@@ -918,7 +911,7 @@ const handlePagination = async (interaction) => {
             logger.warn(`Unknown pagination action: ${action}`);
             const embed = new EmbedBuilder()
                 .setDescription('Unknown pagination action.')
-                .setColor(0xFFD700)
+                .setColor(getEmbedColor(interaction))
                 .setTimestamp();
             return interaction.reply({ embeds: [embed], ephemeral: true });
         }
@@ -932,13 +925,11 @@ const handlePagination = async (interaction) => {
 
         const userPosition = membersArray.findIndex(member => member.id === interaction.user.id) + 1;
 
-        const pupsRoleColor = pupsRole.color || 0xe96d6d; // Fallback color if role has no color
-
         const embed = new EmbedBuilder()
             .setAuthor({ name: 'PUPS List', iconURL: interaction.guild.iconURL() })
             .setDescription(`Mode: **PUPS** [${currentPage + 1}/${totalPages}]\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n${memberList}\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬`)
             .setFooter({ text: `${userPosition}. [${interaction.user.username}]`, iconURL: interaction.user.displayAvatarURL() })
-            .setColor(pupsRoleColor)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
 
         const buttons = new ActionRowBuilder()
@@ -962,7 +953,7 @@ const handlePagination = async (interaction) => {
         logger.error('Error handling pagination:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while handling pagination.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
@@ -973,29 +964,27 @@ const handlePagination = async (interaction) => {
  * @param {CommandInteraction} interaction 
  */
 const handleAdd = async (interaction) => {
-    // Defer the reply to extend the timeout
-    await interaction.deferReply({ ephemeral: true }); // Changed from flags: InteractionResponseFlags.EPHEMERAL
+    await interaction.deferReply({ ephemeral: true });
 
     const user = interaction.options.getUser('user');
 
     if (!user) {
         const embed = new EmbedBuilder()
             .setDescription('Please provide a user to add the PUPS role to.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
 
     const executor = interaction.member;
 
-    // Permission check using the allowedRoles list
     if (!allowedRoles.some(roleId => executor.roles.cache.has(roleId))) {
         const embed = new EmbedBuilder()
             .setTitle('Missing Role!')
             .setDescription(`Only these members can use this command:\n${allowedRoles
                 .map(roleId => `- <@&${roleId}>`)
                 .join('\n')}`)
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
@@ -1008,7 +997,7 @@ const handleAdd = async (interaction) => {
             logger.error(`PUPS Role with ID ${config.pupsRoleId} not found.`);
             const embed = new EmbedBuilder()
                 .setDescription('PUPS role not found.')
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -1016,37 +1005,36 @@ const handleAdd = async (interaction) => {
         if (member.roles.cache.has(pupsRole.id)) {
             const embed = new EmbedBuilder()
                 .setDescription(`> <@${user.id}> is already <@&${config.pupsRoleId}>`)
-                .setColor(0xFFD700);
+                .setColor(getEmbedColor(interaction));
             return interaction.editReply({ embeds: [embed] });
         }
 
         await member.roles.add(pupsRole);
 
-        // Reply with confirmation embed
-        const addedEmbed = new EmbedBuilder()
-            .setDescription(`> Added <@${user.id}> to <@&${config.pupsRoleId}>.`)
-            .setColor(pupsRole.color || 0x00FF00); // Default to green if role has no color
-        await interaction.editReply({ embeds: [addedEmbed] });
-
-        // Removed the automatic announcement embed
          const announcementEmbed = new EmbedBuilder()
              .setAuthor({ name: member.user.username, iconURL: member.user.displayAvatarURL() })
              .setTitle('PUPS Addition')
              .setDescription(`> <@${user.id}> has been added to <@&${config.pupsRoleId}>\n**Added By:** <@${interaction.user.id}>.`)
-             .setColor('#00FF00')
+             .setColor(getEmbedColor(interaction))
              .setTimestamp();
 
-         await channel.send({ embeds: [announcementEmbed] }).then(sentMessage => {
-             sentMessage.react('🔥'); // Fire emoji for addition
-         });
+         // Assuming channel is defined elsewhere or should be fetched
+         const channel = interaction.guild.channels.cache.get(config.pupsChannelId);
+         if (channel) {
+             await channel.send({ embeds: [announcementEmbed] }).then(sentMessage => {
+                 sentMessage.react('🔥');
+             });
+         }
 
-        // Optionally, you can log or perform other actions here
-
+        const addedEmbed = new EmbedBuilder()
+            .setDescription(`> Added <@${user.id}> to <@&${config.pupsRoleId}>.`)
+            .setColor(getEmbedColor(interaction));
+        await interaction.editReply({ embeds: [addedEmbed] });
     } catch (error) {
         logger.error('Error adding PUPS role:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while adding the PUPS role.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
@@ -1057,8 +1045,7 @@ const handleAdd = async (interaction) => {
  * @param {CommandInteraction} interaction 
  */
 const handleRemove = async (interaction) => {
-    // Defer the reply to extend the timeout
-    await interaction.deferReply({ ephemeral: true }); // Changed from flags: InteractionResponseFlags.EPHEMERAL
+    await interaction.deferReply({ ephemeral: true });
 
     const user = interaction.options.getUser('user');
     const channel = interaction.guild.channels.cache.get(config.pupsChannelId);
@@ -1066,21 +1053,20 @@ const handleRemove = async (interaction) => {
     if (!user) {
         const embed = new EmbedBuilder()
             .setDescription('You need to provide a user to remove the PUPS from.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
 
     const executor = interaction.member;
 
-    // Permission check using the allowedRoles list
     if (!allowedRoles.some(roleId => executor.roles.cache.has(roleId))) {
         const embed = new EmbedBuilder()
             .setTitle('Missing Role!')
             .setDescription(`Only these members can use this command:\n${allowedRoles
                 .map(roleId => `- <@&${roleId}>`)
                 .join('\n')}`)
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
@@ -1093,7 +1079,7 @@ const handleRemove = async (interaction) => {
             logger.error(`PUPS Role with ID ${config.pupsRoleId} not found.`);
             const embed = new EmbedBuilder()
                 .setDescription(`PUPS role not found.\n> Current PUPS role config: ${config.pupsRoleId}`)
-                .setColor(0x980e00);
+                .setColor(getEmbedColor(interaction));
 
             return interaction.editReply({ embeds: [embed] });
         }
@@ -1101,34 +1087,32 @@ const handleRemove = async (interaction) => {
         if (!member.roles.cache.has(pupsRole.id)) {
             const embed = new EmbedBuilder()
                 .setDescription(`> <@${user.id}> is not <@&${config.pupsRoleId}>.`)
-                .setColor(0xFFD700);
+                .setColor(getEmbedColor(interaction));
             return interaction.editReply({ embeds: [embed] });
         }
 
         await member.roles.remove(pupsRole);
 
-        // Reply with confirmation embed
         const removedEmbed = new EmbedBuilder()
             .setDescription(`> Removed <@${user.id}> from <@&${config.pupsRoleId}>.`)
-            .setColor(pupsRole.color || 0xFF0000); // Default to red if role has no color
+            .setColor(getEmbedColor(interaction));
         await interaction.editReply({ embeds: [removedEmbed] });
 
         const announcementEmbed = new EmbedBuilder()
             .setAuthor({ name: member.user.username, iconURL: member.user.displayAvatarURL() })
             .setTitle('PUPS Removal')
             .setDescription(`> <@${user.id}> has been removed from <@&${config.pupsRoleId}>.\n- **Removed by:** <@${interaction.user.id}>`)
-            .setColor(pupsRole.color || 0xFF0000) // Same as role color
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
 
          await channel.send({ embeds: [announcementEmbed] }).then(sentMessage => {
-             sentMessage.react('💔'); // Heartbreak emoji for removal
+             sentMessage.react('💔');
          });
-
     } catch (error) {
         logger.error('Error removing PUPS role:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while removing the PUPS role.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
@@ -1139,8 +1123,7 @@ const handleRemove = async (interaction) => {
  * @param {CommandInteraction} interaction 
  */
 const handleMyVote = async (interaction) => {
-    // Defer the reply to extend the timeout
-    await interaction.deferReply({ ephemeral: false }); // Public reply as per requirements
+    await interaction.deferReply({ ephemeral: false });
 
     try {
         const userId = interaction.user.id;
@@ -1152,32 +1135,30 @@ const handleMyVote = async (interaction) => {
         if (polls.length === 0) {
             const noPollsEmbed = new EmbedBuilder()
                 .setDescription('```ini\nYou do not have any polls```')
-                .setColor('#D72F2F')
+                .setColor(getEmbedColor(interaction))
                 .setTimestamp();
             return interaction.editReply({ embeds: [noPollsEmbed] });
         }
 
         const totalPages = polls.length;
-        const currentPage = 0; // Start with the first poll
+        const currentPage = 0;
         const poll = polls[currentPage];
         const status = poll.active ? 'active' : 'inactive';
         const user = interaction.user;
-
-        // Calculate Poll ID based on recency
         const pollId = totalPages - currentPage;
 
         const pollEmbed = new EmbedBuilder()
             .setAuthor({ name: `${user.username} | PUPS Vote`, iconURL: user.displayAvatarURL() })
             .setDescription(
                 `- **Poll ID** relative to user: \`${pollId}\`\n` +
-                `> This poll is currently __\`${status}\`__.\u00A0\u00A0\u00A0\u00A0\u00A0` // Added Unicode spaces here
+                `> This poll is currently __\`${status}\`__.\u00A0\u00A0\u00A0\u00A0\u00A0`
             )
             .addFields(
                 { name: 'Upvotes 👍', value: `\`\`\`${poll.upvotes}\`\`\``, inline: true },
                 { name: 'Downvotes 👎', value: `\`\`\`${poll.downvotes}\`\`\``, inline: true }
             )
             .setFooter({ text: `Poll 1/${polls.length}`, iconURL: user.displayAvatarURL() })
-            .setColor('#e96d6d')
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
 
         const buttons = new ActionRowBuilder()
@@ -1187,8 +1168,8 @@ const handleMyVote = async (interaction) => {
                     .setEmoji('⬅️')
                     .setStyle(ButtonStyle.Primary)
                     .setDisabled(currentPage === 0),
-                    new ButtonBuilder()
-                    .setCustomId(`voteview_viewvotes_${userId}_pups_${currentPage}`) // Changed from `view_votes_pups_${poll.id}`
+                new ButtonBuilder()
+                    .setCustomId(`voteview_viewvotes_${userId}_pups_${currentPage}`)
                     .setEmoji('🔍')
                     .setLabel('View Votes')
                     .setStyle(ButtonStyle.Secondary),
@@ -1204,45 +1185,44 @@ const handleMyVote = async (interaction) => {
         logger.error('Error handling /pups myvote command:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while fetching your polls.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
 };
+
 /**
  * Handle pagination for the /pups myvote command
  * @param {ButtonInteraction} interaction 
  */
 const handleMyVotePagination = async (interaction) => {
-    const customId = interaction.customId; // e.g., 'next_myvote_pups_<userId>_<currentPage>'
+    const customId = interaction.customId;
     const parts = customId.split('_');
 
     if (parts.length < 5) {
         logger.warn(`Invalid customId format for myvote pagination: ${customId}`);
         const embed = new EmbedBuilder()
             .setDescription('Invalid pagination interaction.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    const action = parts[0]; // 'next' or 'prev'
-    const type = parts[1]; // 'myvote'
-    const pollType = parts[2]; // 'pups'
-    const initiatorId = parts[3]; // 'userId'
-    let currentPage = parseInt(parts[4], 10); // Current page index
+    const action = parts[0];
+    const type = parts[1];
+    const pollType = parts[2];
+    const initiatorId = parts[3];
+    let currentPage = parseInt(parts[4], 10);
 
-    // Verify that the user interacting is the initiator
     if (interaction.user.id !== initiatorId) {
         const embed = new EmbedBuilder()
             .setDescription(`> Only <@${initiatorId}> can use these buttons.`)
-            .setColor('#D72F2F')
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     try {
-        // Fetch all polls for the initiator
         let [polls] = await pool.execute(
             'SELECT * FROM polls WHERE user_id = ? AND type = "pups" ORDER BY created_at DESC',
             [initiatorId]
@@ -1251,14 +1231,13 @@ const handleMyVotePagination = async (interaction) => {
         if (polls.length === 0) {
             const embed = new EmbedBuilder()
                 .setDescription('You do not have any polls.')
-                .setColor(0xFFD700)
+                .setColor(getEmbedColor(interaction))
                 .setTimestamp();
             return interaction.update({ embeds: [embed], components: [] });
         }
 
         const totalPages = polls.length;
 
-        // Adjust currentPage based on action
         if (action === 'next') {
             currentPage += 1;
         } else if (action === 'prev') {
@@ -1267,18 +1246,17 @@ const handleMyVotePagination = async (interaction) => {
             logger.warn(`Unknown pagination action: ${action}`);
             const embed = new EmbedBuilder()
                 .setDescription('Unknown pagination action.')
-                .setColor(0xFFD700)
+                .setColor(getEmbedColor(interaction))
                 .setTimestamp();
             return interaction.reply({ embeds: [embed], ephemeral: true });
         }
 
-        // Ensure currentPage is within bounds
         if (currentPage < 0) currentPage = 0;
         if (currentPage >= totalPages) currentPage = totalPages - 1;
 
         const poll = polls[currentPage];
         const status = poll.active ? 'active' : 'inactive';
-        const pollId = currentPage + 1; // Adjust Poll ID based on zero-based index
+        const pollId = currentPage + 1;
 
         const pollEmbed = new EmbedBuilder()
             .setAuthor({ name: `${interaction.user.username} | PUPS Vote`, iconURL: interaction.user.displayAvatarURL({ dynamic: true }) })
@@ -1291,10 +1269,9 @@ const handleMyVotePagination = async (interaction) => {
                 text: `Poll ${pollId}/${totalPages}`,
                 iconURL: interaction.user.displayAvatarURL({ dynamic: true })
             })
-            .setColor('#e96d6d')
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
 
-        // Create navigation buttons with consistent customIds
         const buttons = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
@@ -1314,7 +1291,6 @@ const handleMyVotePagination = async (interaction) => {
                     .setDisabled(currentPage === totalPages - 1)                
             );
 
-        // Edit the original message with the new embed and updated buttons
         await interaction.update({ embeds: [pollEmbed], components: [buttons] });
 
         logger.info(`PUPS myvote pagination: user ${initiatorId} navigated to page ${pollId}/${totalPages}`);
@@ -1322,7 +1298,7 @@ const handleMyVotePagination = async (interaction) => {
         logger.error('Error handling myvote pagination:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while handling pagination.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
@@ -1335,37 +1311,36 @@ const handleMyVotePagination = async (interaction) => {
 const handleAddToPups = async (interaction) => {
     await interaction.deferReply({ ephemeral: true });
 
-    const customId = interaction.customId; // e.g., 'add_to_pups_151'
+    const customId = interaction.customId;
     const parts = customId.split('_');
 
-    if (parts.length < 4) { // 'add_to_pups_<pollId>'
+    if (parts.length < 4) {
         logger.warn(`Invalid customId for add to pups: ${customId}`);
         const embed = new EmbedBuilder()
             .setDescription('Invalid interaction.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
 
-    const action = `${parts[0]}_${parts[1]}`; // 'add_to'
-    const type = parts[2]; // 'pups'
+    const action = `${parts[0]}_${parts[1]}`;
+    const type = parts[2];
     const pollId = parts[3];
 
     if (type !== 'pups') {
         logger.warn(`Ignoring non-pups type: ${type}`);
         const embed = new EmbedBuilder()
             .setDescription('This interaction is not valid for PUPS polls.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
 
-    // Fetch poll details
     const [polls] = await pool.execute('SELECT * FROM polls WHERE id = ? AND type = "pups" AND active = 0', [pollId]);
     if (polls.length === 0) {
         const embed = new EmbedBuilder()
             .setDescription('Poll not found or is still active.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
@@ -1381,28 +1356,25 @@ const handleAddToPups = async (interaction) => {
             logger.error(`PUPS Role with ID ${config.pupsRoleId} not found.`);
             const embed = new EmbedBuilder()
                 .setDescription('PUPS role not found.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction));
             return interaction.editReply({ embeds: [embed] });
         }
 
         if (member.roles.cache.has(pupsRole.id)) {
             const embed = new EmbedBuilder()
                 .setDescription(`> <@${userId}> is already <@&${config.pupsRoleId}>`)
-                .setColor(0xFFD700);
+                .setColor(getEmbedColor(interaction));
             return interaction.editReply({ embeds: [embed] });
         }
 
         await member.roles.add(pupsRole);
 
-        // Fetch the original voting message using message_id
         const messageId = poll.message_id;
         if (!messageId) {
             logger.error(`Poll with ID ${poll.id} does not have a message_id.`);
             const embed = new EmbedBuilder()
                 .setDescription('Original voting message ID not found in the database.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction));
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -1411,8 +1383,7 @@ const handleAddToPups = async (interaction) => {
             logger.error(`PUPS Channel with ID ${config.pupsChannelId} not found.`);
             const embed = new EmbedBuilder()
                 .setDescription('PUPS voting channel not found.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction));
             return interaction.editReply({ embeds: [embed] });
         }
 
@@ -1423,40 +1394,34 @@ const handleAddToPups = async (interaction) => {
             logger.error(`Could not fetch message with ID ${messageId}:`, err);
             const embed = new EmbedBuilder()
                 .setDescription('Original voting message not found in the channel.')
-                .setColor(0x980e00);
-
+                .setColor(getEmbedColor(interaction));
             return interaction.editReply({ embeds: [embed] });
         }
 
-        // Prepare the new embed
         const additionEmbed = new EmbedBuilder()
             .setAuthor({ name: `${member.user.username}`, iconURL: member.user.displayAvatarURL() })
             .setTitle('PUPS Addition')
             .setDescription(`> <@${userId}> has been added to <@&${config.pupsRoleId}>.\n- **Added By:** <@${interaction.user.id}>`)
-            .setColor('#e96d6d') 
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
 
-        // Send the new message as a reply to the original vote message
         const sentAdditionMessage = await channel.send({
             embeds: [additionEmbed],
             reply: { messageReference: originalMessage.id }
         });
 
-        // React to the new message with fire emoji
         await sentAdditionMessage.react('🔥');
 
-        // Send a confirmation to the user who clicked the button
         const confirmationEmbed = new EmbedBuilder()
             .setDescription(`> <@${userId}> has been successfully added to <@&${config.pupsRoleId}>.`)
-            .setColor(0x00FF00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         await interaction.editReply({ embeds: [confirmationEmbed] });
-
     } catch (error) {
         logger.error('Error adding PUPS role via Add to Pups button:', error);
         const embed = new EmbedBuilder()
             .setDescription('An error occurred while adding the PUPS role.')
-            .setColor(0x980e00)
+            .setColor(getEmbedColor(interaction))
             .setTimestamp();
         return interaction.editReply({ embeds: [embed] });
     }
@@ -1467,7 +1432,6 @@ const handleAddToPups = async (interaction) => {
  * @param {ButtonInteraction} interaction 
  */
 const handleAddToPupsButton = async (interaction) => {
-    // Delegate to handleAddToPups function
     await handleAddToPups(interaction);
 };
 
@@ -1479,7 +1443,6 @@ const closePreviousPoll = async (pollId) => {
     await pool.execute('UPDATE polls SET active = 0 WHERE id = ?', [pollId]);
 };
 
-// Export all handlers and necessary properties
 module.exports = {
     allowedRoles,
     votingAllowedRoles,
