@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 
-const registerChannelId = '1300041846801829958';
+const verifyChannelId = '1300041846801829958';
 const entranceChannelId = '1298246407752515627';
 
 module.exports = (client) => {
@@ -24,7 +24,7 @@ module.exports = (client) => {
         }
 
         // Ghost ping in the register channel
-        const registerChannel = member.guild.channels.cache.get(registerChannelId);
+        const registerChannel = member.guild.channels.cache.get(verifyChannelId);
         if (registerChannel) {
             try {
                 const ghostPingMessage = await registerChannel.send(`<@${member.user.id}>`);
