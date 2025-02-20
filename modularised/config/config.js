@@ -33,7 +33,7 @@ module.exports = {
     ScreenshareManagerRoleId: '1228653981010497599',
     ScreensharerRoleId: '1228653981010497598',
     TrialScreensharerRoleId: '1228653981010497597',
-    announcementChannelId: '1323539892487196724',
+    announcementChannelId: '1299768976360079401',
     ticketBlacklistRoleId: '1264857224338079755',
 
     // booster

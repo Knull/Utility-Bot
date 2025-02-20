@@ -120,5 +120,8 @@ process.on("unhandledRejection", sendErrorLog);
 
 
 require('./utilities/booster')(client);
+require('./events/guildMemberAdd')(client);
+require('./events/guildMemberRemove')(client);
+
 
 client.pagination = new Collection();

@@ -1,4 +1,4 @@
-const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, MessageFlags } = require('discord.js');
+                const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, MessageFlags } = require('discord.js');
 const config = require('../config/config');
 
 // Reuse the same helper to get the Premium role color.
@@ -19,25 +19,29 @@ async function handlePremiumPagination(interaction, customId) {
         // Ensure only the user who initiated the command can interact with these buttons.
         if (userId !== interaction.user.id) {
             console.log(`Unauthorized interaction from user ${interaction.user.id} for customId ${customId}`);
+            // Send an ephemeral message if the wrong user clicks the button.
             return interaction.reply({
                 content: 'Only the user who initiated this command can interact with these buttons.',
-                flags: MessageFlags.EPHEMERAL,
+                ephemeral: true,
             });
         }
+
+        // Acknowledge the interaction without sending a message immediately.
+        await interaction.deferUpdate();
 
         let currentPage = parseInt(currentPageStr);
         const premiumRole = interaction.guild.roles.cache.get(config.premiumRoleId);
 
         if (!premiumRole) {
             console.error('Premium role not found.');
-            return interaction.update({
+            return interaction.editReply({
                 content: 'Premium role not found.',
                 components: [],
                 embeds: [],
             });
         }
 
-        // Force fetch guild members so that the cache is up-to-date even after a bot restart.
+        // Force fetch guild members so that the cache is up-to-date.
         await interaction.guild.members.fetch();
 
         // Fetch all members with the Premium role.
@@ -50,16 +54,17 @@ async function handlePremiumPagination(interaction, customId) {
             const noMembersEmbed = new EmbedBuilder()
                 .setDescription('```ini\nNo members with Premium role found.\n```')
                 .setColor(0xe74c3c);
-            return interaction.update({ embeds: [noMembersEmbed], components: [] });
+            return interaction.editReply({ embeds: [noMembersEmbed], components: [] });
         }
 
+        // Adjust page number based on action.
         if (action === 'next') {
             currentPage += 1;
         } else if (action === 'prev') {
             currentPage -= 1;
         }
 
-        // Validate page number
+        // Validate page number.
         if (currentPage < 0) currentPage = 0;
         if (currentPage >= totalPages) currentPage = totalPages - 1;
 
@@ -95,15 +100,26 @@ async function handlePremiumPagination(interaction, customId) {
                 .setDisabled(currentPage === totalPages - 1)
         );
 
-        await interaction.update({ embeds: [listEmbed], components: [buttons] });
+        // Update the message where the button was clicked.
+        await interaction.editReply({ embeds: [listEmbed], components: [buttons] });
         console.log(`User ${interaction.user.id} navigated to page ${currentPage + 1}/${totalPages} of Premium Members List.`);
     } catch (error) {
         console.error(`Error in handlePremiumPagination for customId ${customId}:`, error);
-        await interaction.reply({
-            content: 'An error occurred while processing your request.',
-            flags: MessageFlags.EPHEMERAL
-        });
+        if (interaction.deferred || interaction.replied) {
+            await interaction.followUp({
+                content: 'An error occurred while processing your request.',
+                ephemeral: true,
+            });
+        } else {
+            await interaction.reply({
+                content: 'An error occurred while processing your request.',
+                ephemeral: true,
+            });
+        }
     }
 }
+
+
+
 
 module.exports = { handlePremiumPagination };

@@ -14,7 +14,8 @@ const config = require('../../config/config');
 const allowedRoles = [
     config.pupsManagerRoleId,
     config.premiumManagerRoleId,
-    config.pugsManagerRoleId
+    config.pugsManagerRoleId,
+    config.pppOwnerRoleId
 ];
 
 /**
@@ -635,21 +636,27 @@ const handleViewVotesPugs = async (interaction, poll) => {
             return interaction.editReply({ embeds: [embed], components: [] });
         }
 
-        // Permission check
         const member = interaction.member;
         const isOwner = (member.id === pollDetails.user_id);
-        const hasRole = member.roles.cache.some(r => allowedRoles.includes(r.id));
-        if (!isOwner && !hasRole) {
+        // Optionally, if you want to allow other manager roles as well, include them:
+        const isAnyManager = member.roles.cache.some(role => [
+            config.pupsManagerRoleId,
+            config.premiumManagerRoleId,
+            config.pugsManagerRoleId,
+            config.pppOwnerRoleId
+        ].includes(role.id));
+
+        if (!isOwner && !isAnyManager) {
             const embed = new EmbedBuilder()
                 .setTitle('No Permission!')
                 .setDescription(
-                    `> Only <@${pollDetails.user_id}> can click this button, or those with:\n` +
-                    allowedRoles.map(r => `<@&${r}>`).join('\n')
+                    `> Only <@${pollDetails.user_id}> can click this button, or those with the manager roles.`
                 )
                 .setColor(0xFF0000)
                 .setTimestamp();
             return interaction.editReply({ embeds: [embed], components: [] });
         }
+
 
         // Color for pugs or pugs_trial
         const roleId = (poll.type === 'pugs_trial') 
