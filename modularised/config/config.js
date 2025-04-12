@@ -13,7 +13,6 @@ module.exports = {
     pugsRoleId: '1228653980977205335',
     pugsManagerRoleId: '1228653980977205338',
     premiumRoleId: '1228653980977205336',
-    premiumChannelId: '1298237605170774016',
     pugsTrialRoleId: '1298233148370325514',
     premiumManagerRoleId: '1228653980977205339',
     pppOwnerRoleId:'1301515990055780352',
@@ -42,6 +41,7 @@ module.exports = {
     // p.p.p voting channel ids
     pugsChannelId: '1298239938336133211',
     pupsChannelId: '1298238445306642452',
-    pugsTrialChannelId: '1298239938336133211'
+    pugsTrialChannelId: '1298239938336133211',
+    premiumChannelId: '1344713022744301659',
 
 };
