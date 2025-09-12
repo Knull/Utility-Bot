@@ -2,7 +2,7 @@
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const config = require('../config/config');
-const logger = require('../utilities/logger'); // Ensure this logger is properly implemented
+const logger = require('../utilities/logger'); 
 
 const staffRoles = [
     config.OwnerRoleId,
@@ -13,7 +13,7 @@ const staffRoles = [
     config.AdminRoleId,
     config.ModRoleId,
     config.HelperRoleId,
-    config.SeniorAdminRoleId, // Sr. Admin included
+    config.SeniorAdminRoleId, 
 ];
 
 const allStaffRoles = [
@@ -22,7 +22,7 @@ const allStaffRoles = [
     { name: 'Manager', id: config.ManagerRoleId },
     { name: 'Developer', id: config.DeveloperRoleId },
     { name: 'Designer', id: config.DesignerRoleId },
-    { name: 'Sr. Admin',  id: config.SeniorAdminRoleId }, // Sr. Admin included
+    { name: 'Sr. Admin',  id: config.SeniorAdminRoleId }, 
     { name: 'Admin', id: config.AdminRoleId },
     { name: 'Mod', id: config.ModRoleId },
     { name: 'Helper', id: config.HelperRoleId },
@@ -145,7 +145,6 @@ module.exports = {
      */
     async handlePagination(interaction) {
         try {
-            // Parse the customId to extract prefix, action, userId
             const [prefix, action, userId] = interaction.customId.split('_');
 
             // Ensure only the user who initiated the command can interact
@@ -157,8 +156,6 @@ module.exports = {
             }
 
             const guild = interaction.guild;
-
-            // Extract the current page number from the embed's title
             const embed = interaction.message.embeds[0];
             let currentPage = 1;
             let totalPages = 1;
@@ -169,16 +166,12 @@ module.exports = {
                     totalPages = parseInt(match[2]);
                 }
             }
-
-            // Determine the new page based on the action
             let newPage = currentPage;
             if (action === 'next') {
                 newPage = Math.min(currentPage + 1, totalPages);
             } else if (action === 'prev') {
                 newPage = Math.max(currentPage - 1, 1);
             }
-
-            // Reconstruct the member list
             const selectedRoleMatch = embed.title.match(/Mode:\s+(.+?)\s+\[\d+\/\d+\]/);
             const embedTitleMode = selectedRoleMatch ? selectedRoleMatch[1] : 'Staff';
             const selectedRole = allStaffRoles.find(role => role.name.toLowerCase() === embedTitleMode.toLowerCase());
@@ -196,18 +189,11 @@ module.exports = {
 
             const pageSize = 10;
             const totalPagesComputed = Math.ceil(sortedMembersArray.length / pageSize);
-
-            // Update totalPages in case it has changed
             totalPages = totalPagesComputed;
-
-            // Ensure newPage does not exceed totalPages
             newPage = Math.min(newPage, totalPages);
-
-            // Create the updated embed and buttons
             const updatedEmbed = getPageEmbed(newPage, sortedMembersArray, guild, interaction, totalPages, embedTitleMode);
             const updatedButtons = getPaginationButtons(newPage, totalPages, userId);
 
-            // Use interaction.update() to update the message
             await interaction.update({ embeds: [updatedEmbed], components: [updatedButtons] });
 
             logger.info(`Staff list pagination: user ${userId} navigated to page ${newPage}/${totalPages}`);

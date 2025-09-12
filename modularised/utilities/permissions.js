@@ -6,7 +6,6 @@ function getPermissionOverwrites(guild, userId, ticketType) {
     console.log(`Ticket Type: ${ticketType}`);
     console.log(`Guild ID: ${guild.id}, User ID: ${userId}`);
     
-    // Ensure all IDs are strings
     const overwrites = [
       {
         id: String(guild.roles.everyone.id),
@@ -17,12 +16,8 @@ function getPermissionOverwrites(guild, userId, ticketType) {
         allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
       },
     ];
-  
-    // Function to safely map permissions
-    const safeMapPermissions = (permissions) => permissions.map(p => p.toString());
-  
-    // Create a version of overwrites suitable for logging (convert BigInt to strings)
-    const logOverwrites = overwrites.map(ow => ({
+      const safeMapPermissions = (permissions) => permissions.map(p => p.toString());
+      const logOverwrites = overwrites.map(ow => ({
       id: ow.id,
       allow: ow.allow ? safeMapPermissions(ow.allow) : [],
       deny: ow.deny ? safeMapPermissions(ow.deny) : [],
@@ -55,9 +50,7 @@ function getPermissionOverwrites(guild, userId, ticketType) {
         }
       );
     }
-  
-    // Create a final version of overwrites suitable for logging
-    const finalLogOverwrites = overwrites.map(ow => ({
+      const finalLogOverwrites = overwrites.map(ow => ({
       id: ow.id,
       allow: ow.allow ? safeMapPermissions(ow.allow) : [],
       deny: ow.deny ? safeMapPermissions(ow.deny) : [],

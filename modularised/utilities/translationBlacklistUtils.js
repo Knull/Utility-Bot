@@ -47,7 +47,7 @@ async function blacklistUser(userId, messageId, channelId, reason, issuedBy, cus
         console.log(`User ${userId} has been blacklisted.`);
     } catch (error) {
         console.error(`Error blacklisting user ${userId}:`, error);
-        throw error; // Re-throw the error to be handled by the caller
+        throw error; // throw the error to be handled by the caller
     }
 }
 
@@ -63,7 +63,7 @@ async function unblacklistUser(userId, pool) {
         console.log(`User ${userId} has been unblacklisted.`);
     } catch (error) {
         console.error(`Error unblacklisting user ${userId}:`, error);
-        throw error; // Re-throw the error to be handled by the caller
+        throw error; // throw the error to be handled by the caller
     }
 }
 
@@ -115,15 +115,11 @@ async function sendBlacklistNotification(client, user, message, reason, pool) {
         const unblacklistButton = new ButtonBuilder()
             .setCustomId(`unblacklist_${user.id}`)
             .setLabel('Remove Blacklist')
-            .setEmoji('⚖️') // Ensure the emoji exists or replace it
+            .setEmoji('⚖️') 
             .setStyle(ButtonStyle.Primary);
 
         const row = new ActionRowBuilder().addComponents(unblacklistButton);
-
-        // Send the embed and store the message reference
         const sentMessage = await translatorChannel.send({ embeds: [blacklistEmbed], components: [row] });
-
-        // Store the notification message ID in the database with the blacklist info
         await storeNotificationMessageId(user.id, sentMessage.id, pool);
 
         console.log(`Blacklist notification for user ${user.id} sent and stored with message ID ${sentMessage.id}`);
@@ -143,7 +139,7 @@ function createInsufficientPermissionsEmbed(guild, allowedRoleIds, interaction) 
     const roleMentions = allowedRoleIds.map(roleId => `<@&${roleId}>`).join('\n');
 
     const embed = new EmbedBuilder()
-        .setColor('#FF0000') // Red color for error
+        .setColor('#FF0000') 
         .setTitle('Insufficient Permissions')
         .setDescription(`Only members with the following roles can use this command:\n${roleMentions}`)
         .setFooter({ text: `Requested by ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })

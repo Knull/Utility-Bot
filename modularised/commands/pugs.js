@@ -1,7 +1,7 @@
 // commands/pugs.js
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const pugsVoteHandler = require('../handlers/voting/pugsVoteHandler');
-const config = require('../config/config'); // Ensure config is imported
+const config = require('../config/config'); // if you're seeing this you're a nerd 
 
 module.exports = {
     data: new SlashCommandBuilder()

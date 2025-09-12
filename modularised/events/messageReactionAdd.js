@@ -38,15 +38,11 @@ async function handleMessageReactionAdd(reaction, user, client) {
     }
 
     console.log(`Reaction added by ${user.tag} with emoji ${reaction.emoji.name}`);
-
-    // Check for forbidden channels
     if (config.forbiddenTranslationChannels.includes(reaction.message.channel.id)) {
         console.log('Reaction is in a forbidden channel.');
         return;
     }
-
-    // Handle translation reaction
-    if (reaction.emoji.id === '1298248723394068541') { // Ensure this is the correct emoji ID
+    if (reaction.emoji.id === '1298248723394068541') { // this is also hard coded, sorry im too lazy 
         console.log('Translation reaction detected.');
 
         const message = reaction.message;
@@ -62,14 +58,11 @@ async function handleMessageReactionAdd(reaction, user, client) {
             console.log(`User ${user.tag} is blacklisted.`);
             return;
         }
-
         // Check if the user has already reacted to this message
         if (await hasUserReacted(user.id, message.id, message.channel.id, client.pool)) {
             console.log(`User ${user.tag} has already reacted to this message. Ignoring.`);
             return;
         }
-
-        // Track the reaction
         await trackReaction(user.id, message.id, message.channel.id, client.pool);
 
         // Get the number of unique messages the user has reacted to in this channel within 60 seconds
@@ -83,7 +76,7 @@ async function handleMessageReactionAdd(reaction, user, client) {
                 message.id,
                 message.channel.id,
                 'Spamming translation emoji across different messages in the same channel within a short period',
-                'System', // Assuming 'System' is the issuer for automated blacklisting
+                'System',
                 false, // customDuration = false for automatic unblacklisting
                 client.pool
             );
@@ -93,6 +86,8 @@ async function handleMessageReactionAdd(reaction, user, client) {
         }
 
         // Translation logic (only if the user is not blacklisted)
+        // don't share this :)
+        // this method might've been patched so idk
         try {
             console.log(`Original text: ${originalText}`);
 
@@ -114,9 +109,7 @@ async function handleMessageReactionAdd(reaction, user, client) {
 
             console.log(`Translated text: ${translatedText}`);
 
-            const fromLang = 'auto';  // Auto-detect the source language (you can customize this)
-
-            // Create an embed for the translated message
+            const fromLang = 'auto';  // Auto-detect the source language (i couldn't find a way to customize this, if you do lmk)
             const embed = new EmbedBuilder()
                 .setColor('#1a37db')
                 .setAuthor({
@@ -126,12 +119,10 @@ async function handleMessageReactionAdd(reaction, user, client) {
                 .setDescription(`- **Original Text**\n> ${originalText}\n- **Translated**\n> ${translatedText}`)
                 .setFooter({ text: `Translated from ${config.languageMap[fromLang] || fromLang} to English` })
                 .setTimestamp();
-
-            // Reply to the message with the translation and ping the user
             await message.reply({
-                content: `<@${user.id}>`, // Ping User 2 (who reacted)
+                content: `<@${user.id}>`, 
                 embeds: [embed],
-                allowedMentions: { users: [user.id], repliedUser: false }  // Only allow mentions for User 2
+                allowedMentions: { users: [user.id], repliedUser: false }  
             });    
         } catch (error) {
             console.error(error);

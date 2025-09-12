@@ -16,7 +16,6 @@ const allowedRoles = [
     config.pugsManagerRoleId,
     config.premiumManagerRoleId,
     config.pppOwnerRoleId,
-    // Add more role IDs if necessary
 ];
 
 // Roles allowed to vote on PUGS polls
@@ -54,8 +53,6 @@ const handleVote = async (interaction) => {
         const user = interaction.options.getUser('user');
         const type = interaction.options.getString('type'); // 'pugs' or 'pugs_trial'
         const member = interaction.member;
-
-        // Permission check using the allowedRoles list
         if (!allowedRoles.some(roleId => member.roles.cache.has(roleId))) {
             const embed = new EmbedBuilder()
                 .setTitle('Missing Role!')
@@ -65,8 +62,6 @@ const handleVote = async (interaction) => {
                 .setColor(getEmbedColor(interaction));
             return interaction.editReply({ embeds: [embed] });
         }
-
-        // Check for existing active poll
         const [rows] = await pool.execute(
             'SELECT * FROM polls WHERE user_id = ? AND type = ? AND active = 1',
             [user.id, type]
@@ -77,16 +72,12 @@ const handleVote = async (interaction) => {
                 .setColor(getEmbedColor(interaction, type));
             return interaction.editReply({ embeds: [embed] });
         }
-
-        // Insert new poll
         const [result] = await pool.execute(
             'INSERT INTO polls (user_id, type, upvotes, downvotes, active, created_at) VALUES (?, ?, 0, 0, 1, NOW())',
             [user.id, type]
         );
 
         const pollId = result.insertId;
-
-        // Determine the role ID based on type
         const roleId = type === 'pugs_trial' ? config.pugsTrialRoleId : config.pugsRoleId;
 
         const embed = new EmbedBuilder()
@@ -118,7 +109,6 @@ const handleVote = async (interaction) => {
                     .setStyle(ButtonStyle.Secondary)
             );
         
-        // Determine the channel ID based on type
         const channelId = type === 'pugs_trial' ? config.pugsTrialChannelId : config.pugsChannelId;
         const channel = interaction.guild.channels.cache.get(channelId);
         if (!channel) {
@@ -130,8 +120,6 @@ const handleVote = async (interaction) => {
         }
 
         const sentMessage = await channel.send({ content: `<@&${roleId}>`, embeds: [embed], components: [buttons] });
-
-        // Update the poll record with the message_id
         await pool.execute('UPDATE polls SET message_id = ? WHERE id = ?', [sentMessage.id, pollId]);
 
         const successEmbed = new EmbedBuilder()

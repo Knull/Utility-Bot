@@ -1,13 +1,12 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const config = require('../config/config');
 
-// Helper function: returns the Premium role’s color, or defaults to a gold color.
 function getPremiumEmbedColor(interaction) {
     const premiumRole = interaction.guild.roles.cache.get(config.premiumRoleId);
     return premiumRole?.color || 0xc79504;
 }
 
-const errorColor = 0xe74c3c; // Red for errors
+const errorColor = 0xe74c3c; 
 
 /**
  * Handles the /premium add and /premium remove subcommands.
@@ -57,7 +56,6 @@ async function handlePromoteCommand(interaction) {
 async function addPremiumRole(interaction, member, user) {
     const premiumRole = interaction.guild.roles.cache.get(config.premiumRoleId);
 
-    // Check if the user already has the Premium role
     if (member.roles.cache.has(premiumRole.id)) {
         const embed = new EmbedBuilder()
             .setDescription(`<@${user.id}> already has the <@&${premiumRole.id}> role.`)
@@ -68,9 +66,6 @@ async function addPremiumRole(interaction, member, user) {
     try {
         await member.roles.add(premiumRole);
         console.log(`Added Premium role to user ${user.id}`);
-
-        // Updated design: embed author is the user's avatar and name; title is "Premium Addition";
-        // description now includes the "Added by" line.
         const embed = new EmbedBuilder()
             .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
             .setTitle('Premium Addition')
@@ -80,7 +75,6 @@ async function addPremiumRole(interaction, member, user) {
 
         await interaction.reply({ embeds: [embed], ephemeral: false });
 
-        // Announcement to the premium announcements channel
         const announcementChannel = interaction.guild.channels.cache.find(ch => ch.id === config.premiumChannelId);
         if (announcementChannel) {
             const announcementEmbed = new EmbedBuilder()
@@ -109,7 +103,6 @@ async function addPremiumRole(interaction, member, user) {
 async function removePremiumRole(interaction, member, user) {
     const premiumRole = interaction.guild.roles.cache.get(config.premiumRoleId);
 
-    // Check if the user has the Premium role
     if (!member.roles.cache.has(premiumRole.id)) {
         const embed = new EmbedBuilder()
             .setDescription(`<@${user.id}> does not have the <@&${premiumRole.id}> role.`)
@@ -120,8 +113,6 @@ async function removePremiumRole(interaction, member, user) {
     try {
         await member.roles.remove(premiumRole);
         console.log(`Removed Premium role from user ${user.id}`);
-
-        // Updated design: same style as addition, but with title "Premium Removal"
         const embed = new EmbedBuilder()
             .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
             .setTitle('Premium Removal')

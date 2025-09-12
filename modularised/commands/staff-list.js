@@ -12,12 +12,13 @@ module.exports = {
                 .setDescription('Sort staff list by hierarchy level')
                 .setRequired(false)
                 .addChoices(
+                    // you will have to adjust this based on your role structure
                     { name: 'Owner', value: 'owner' },
                     { name: 'Head Developer', value: 'head-developer' },
                     { name: 'Manager', value: 'manager' },
                     { name: 'Developer', value: 'developer' },
                     { name: 'Designer', value: 'designer' },
-                    { name: 'Sr. Admin', value: 'sr-admin' }, // Added Sr. Admin
+                    { name: 'Sr. Admin', value: 'sr-admin' }, 
                     { name: 'Admin', value: 'admin' },
                     { name: 'Mod', value: 'mod' },
                     { name: 'Helper', value: 'helper' },

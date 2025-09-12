@@ -3,7 +3,7 @@ import chat_exporter
 import argparse
 import asyncio
 import os
-
+# DO NOT CHANGE THIS FILE AT ALL
 async def export_chat(token, channel_id, output_file, limit=100, tz_info="UTC", military_time=False):
     intents = discord.Intents.default()
     intents.members = True

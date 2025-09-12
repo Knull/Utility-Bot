@@ -1,6 +1,6 @@
 // handlers/upgradeHandler.js
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
-const ms = require('ms'); // Ensure this package is installed
+const ms = require('ms'); 
 const config = require('../config/config');
 
 /**
@@ -12,28 +12,21 @@ async function handlePromoteCommand(interaction) {
     const tier = interaction.options.getString('tier');
 
     const guild = interaction.guild;
-    const member = interaction.member; // The user who invoked the command
+    const member = interaction.member;
     const targetMember = await guild.members.fetch(user.id).catch(() => null);
 
     if (!targetMember) {
         return interaction.reply({ content: 'User not found in this server.', ephemeral: true });
     }
-
-    // Check if the command user has manager roles
     const hasPupsManagerRole = member.roles.cache.has(config.pupsManagerRoleId);
     const hasPugsManagerRole = member.roles.cache.has(config.pugsManagerRoleId);
     const hasPremiumManagerRole = member.roles.cache.has(config.premiumManagerRoleId);
-
-    // Check if the user has any of the manager roles
     if (!hasPupsManagerRole && !hasPugsManagerRole && !hasPremiumManagerRole) {
-        // User does not have permission
         const embed = new EmbedBuilder()
             .setDescription(`Only people with the following roles can use this command:\n- <@&${config.pupsManagerRoleId}>\n- <@&${config.pugsManagerRoleId}>\n- <@&${config.premiumManagerRoleId}>`)
             .setColor('#e74c3c');
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
-
-    // Handle promotion based on the tier
     switch (tier) {
         case 'pups':
             if (hasPupsManagerRole || hasPugsManagerRole || hasPremiumManagerRole) {
@@ -76,8 +69,6 @@ async function handlePromoteCommand(interaction) {
 async function handlePromoteAutocomplete(interaction) {
     const guild = interaction.guild;
     const member = interaction.member; // The user who invoked the command
-
-    // Initialize options
     let options = [];
 
     // Check if the command user has any manager roles
@@ -89,10 +80,7 @@ async function handlePromoteAutocomplete(interaction) {
     if (!hasPupsManagerRole && !hasPugsManagerRole && !hasPremiumManagerRole) {
         options.push({ name: 'None', value: 'none' });
     } else {
-        // Try to get the target user ID
         let targetUserId;
-
-        // In an autocomplete interaction, options before the focused option are available
         const userOption = interaction.options.get('user');
 
         if (userOption && userOption.value) {
@@ -102,10 +90,8 @@ async function handlePromoteAutocomplete(interaction) {
         }
 
         if (!targetUserId) {
-            // The user option hasn't been specified yet
             options.push({ name: 'Please select a user first.', value: 'none' });
         } else {
-            // Fetch the target member using the user ID
             let targetMember;
             try {
                 targetMember = await guild.members.fetch(targetUserId);
@@ -117,22 +103,14 @@ async function handlePromoteAutocomplete(interaction) {
                 );
                 return;
             }
-
-            // Now proceed with your logic as before
             const targetRoles = targetMember.roles.cache;
-
-            // Define role IDs for easier reference
             const pupsRoleId = config.pupsRoleId;
             const pugsTrialRoleId = config.pugsTrialRoleId;
             const pugsRoleId = config.pugsRoleId;
             const premiumRoleId = config.premiumRoleId;
-
-            // Function to check if the target user has any of the specified roles
             const hasAnyRole = (roles) => roles.some(roleId => targetRoles.has(roleId));
 
-            // Build options based on manager roles and target user's current roles
             if (hasPremiumManagerRole) {
-                // Premium Manager can promote to any tier
                 if (!targetRoles.has(premiumRoleId)) {
                     if (!targetRoles.has(pupsRoleId)) {
                         options.push({ name: 'PUPS', value: 'pups' });
@@ -171,8 +149,6 @@ async function handlePromoteAutocomplete(interaction) {
             }
         }
     }
-
-    // Respond to the autocomplete interaction
     await interaction.respond(
         options.map(option => ({ name: option.name, value: option.value }))
     );
@@ -195,7 +171,6 @@ async function denyPermission(interaction) {
  * @param {GuildMember} targetMember 
  */
 async function promoteToPups(interaction, targetMember) {
-    // Check if the target user already has PUPS or higher roles
     const targetRoles = targetMember.roles.cache;
     if (targetRoles.has(config.pupsRoleId) || targetRoles.has(config.pugsTrialRoleId) || targetRoles.has(config.pugsRoleId) || targetRoles.has(config.premiumRoleId)) {
         const embed = new EmbedBuilder()
@@ -203,13 +178,9 @@ async function promoteToPups(interaction, targetMember) {
             .setColor('#e74c3c');
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
-
-    // Add PUPS role to the target user
     try {
         await targetMember.roles.add(config.pupsRoleId);
         console.log(`Added PUPS role to ${targetMember.user.username}`);
-
-        // Reply to the interaction
         const replyEmbed = new EmbedBuilder()
             .setDescription(`Added <@${targetMember.id}> to <@&${config.pupsRoleId}>.`)
             .setColor('#e91e63');
@@ -243,7 +214,6 @@ async function promoteToPups(interaction, targetMember) {
  * @param {GuildMember} targetMember 
  */
 async function promoteToPugsTrial(interaction, targetMember) {
-    // Check if the target user already has PUGS Trial or higher roles
     const targetRoles = targetMember.roles.cache;
     if (targetRoles.has(config.pugsTrialRoleId) || targetRoles.has(config.pugsRoleId) || targetRoles.has(config.premiumRoleId)) {
         const embed = new EmbedBuilder()
@@ -252,19 +222,15 @@ async function promoteToPugsTrial(interaction, targetMember) {
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
-    // Add PUGS Trial role to the target user
+    // Add PUGS Trial to the target user
     try {
         await targetMember.roles.add(config.pugsTrialRoleId);
         console.log(`Added PUGS Trial role to ${targetMember.user.username}`);
-
-        // Reply to the interaction
         const replyEmbed = new EmbedBuilder()
             .setDescription(`Added <@${targetMember.id}> to <@&${config.pugsTrialRoleId}>.`)
             .setColor('#e74c3c');
 
         await interaction.reply({ embeds: [replyEmbed], ephemeral: false });
-
-        // Send announcement to pugs-voting channel
         const votingChannel = interaction.guild.channels.cache.find(ch => ch.name === 'pugs-voting');
         if (votingChannel) {
             const votingEmbed = new EmbedBuilder()
@@ -291,7 +257,6 @@ async function promoteToPugsTrial(interaction, targetMember) {
  * @param {GuildMember} targetMember 
  */
 async function promoteToPugs(interaction, targetMember) {
-    // Check if the target user already has PUGS or higher roles
     const targetRoles = targetMember.roles.cache;
     if (targetRoles.has(config.pugsRoleId) || targetRoles.has(config.premiumRoleId)) {
         const embed = new EmbedBuilder()
@@ -299,25 +264,17 @@ async function promoteToPugs(interaction, targetMember) {
             .setColor('#b90d1a');
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
-
-    // Remove PUGS Trial role if the user has it
     if (targetRoles.has(config.pugsTrialRoleId)) {
         await targetMember.roles.remove(config.pugsTrialRoleId);
     }
-
-    // Add PUGS role to the target user
     try {
         await targetMember.roles.add(config.pugsRoleId);
         console.log(`Added PUGS role to ${targetMember.user.username}`);
-
-        // Reply to the interaction
         const replyEmbed = new EmbedBuilder()
             .setDescription(`Added <@${targetMember.id}> to <@&${config.pugsRoleId}>.`)
             .setColor('#b90d1a');
 
         await interaction.reply({ embeds: [replyEmbed], ephemeral: false });
-
-        // Send announcement to pugs-voting channel
         const votingChannel = interaction.guild.channels.cache.find(ch => ch.name === 'pugs-voting');
         if (votingChannel) {
             const votingEmbed = new EmbedBuilder()
@@ -344,7 +301,6 @@ async function promoteToPugs(interaction, targetMember) {
  * @param {GuildMember} targetMember 
  */
 async function promoteToPremium(interaction, targetMember) {
-    // Check if the target user already has the Premium role
     const targetRoles = targetMember.roles.cache;
     if (targetRoles.has(config.premiumRoleId)) {
         const embed = new EmbedBuilder()
@@ -352,20 +308,14 @@ async function promoteToPremium(interaction, targetMember) {
             .setColor('#c79504');
         return interaction.reply({ embeds: [embed], ephemeral: true });
     }
-
-    // Add Premium role to the target user
     try {
         await targetMember.roles.add(config.premiumRoleId);
         console.log(`Added Premium role to ${targetMember.user.username}`);
-
-        // Reply to the interaction
         const replyEmbed = new EmbedBuilder()
             .setDescription(`Added <@${targetMember.id}> to <@&${config.premiumRoleId}>.`)
             .setColor('#c79504');
 
         await interaction.reply({ embeds: [replyEmbed], ephemeral: false });
-
-        // Send announcement to premium-announcements channel
         const announcementChannel = interaction.guild.channels.cache.find(ch => ch.name === 'premium-announcements');
         if (announcementChannel) {
             const announcementEmbed = new EmbedBuilder()

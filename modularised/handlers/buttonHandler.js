@@ -19,8 +19,6 @@ async function handleButtonInteraction(interaction, client) {
         await handler(interaction, client);
     } else {
         console.log(`Unhandled button interaction with customId: ${customId}`);
-        // Optionally, inform the user about the unhandled button
-        // await interaction.reply({ content: 'This button is not recognized.', ephemeral: true });
     }
 }
 

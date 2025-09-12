@@ -36,10 +36,7 @@ const client = new Client({
     ]
 });
 
-// Attach MySQL Pool to Client
 client.pool = pool;
-
-// Initialize Collection for Commands
 client.commands = new Collection();
 
 // Load Command Files
@@ -91,27 +88,22 @@ for (const file of eventFiles) {
         client.on(event.name, (...args) => event.execute(...args, client));
     }
 }
-
-// Log in to Discord
 client.login(config.token);
 
-// Handle Booster Functionality
-
 // Catch uncaught exceptions and unhandled promise rejections
-const ownerId = config.ownerId; // Ensure ownerId is defined in config.js
-
+const ownerId = config.ownerId; // Pls ensure that ownerId is defined in config.js
+// function below is something for the developer.
 async function sendErrorLog(error) {
     try {
         const user = await client.users.fetch(ownerId);
         
         const errorEmbed = new EmbedBuilder()
-            .setColor(0x8B0000) // Dark red color
+            .setColor(0x8B0000) 
             .setDescription(`\`\`\`js\n${error.stack || error}\n\`\`\``)
-            .setTimestamp(); // Adds a timestamp to the embed
+            .setTimestamp(); 
 
         await user.send({ embeds: [errorEmbed] });
     } catch (err) {
-        // If DM fails, no additional action is taken
     }
 }
 
