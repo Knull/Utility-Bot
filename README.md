@@ -1,4 +1,4 @@
-# Pika Ranked Bedwars Bot
+# Utility Bot
 
 A modular Discord bot for managing the Ranked Bedwars community on the Pika Network. The bot uses [discord.js](https://discord.js.org/) and a MySQL database to provide commands and automation for staff and players.
 
